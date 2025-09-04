@@ -1,29 +1,42 @@
 ﻿name,tier,position,stamina,skill
-Lăng,2.4,['MF'],30,5 sao
-Hiệp,2.6,['MF'],40.0,5 sao
-Minh,2.4,['MF'],40.0,4 sao
-Phúc,2.8,['MF'],40.0,6 sao
-Đức,3.4,"['GK', 'MF']",70,6 sao
-Hải,3.4,['MF'],70.0,6 sao
-Khanh,2.8,['MF'],40.0,6 sao
-Mạnh,3.2,['MF'],70.0,5 sao
-Khang,2.0,"['GK', 'MF']",30.0,3 sao
-Bảo,2.6,['MF'],50.0,4 sao
-Châu,3.2,['MF'],60.0,6 sao
-Văn,3.0,['MF'],50.0,6 sao
-Long,2.4,['MF'],40.0,4 sao
-Dự,3.6,['MF'],80.0,6 sao
-Vũ,2.6,['MF'],40.0,5 sao
-Nam,2.2,['MF'],30.0,4 sao
-Trung,2.6,['MF'],40.0,5 sao
-Thương,3.0,['MF'],60.0,5 sao
-Vương,3.0,['MF'],50.0,6 sao
-Quang,3.2,"['GK', 'MF']",70.0,5 sao
-Trí,3.0,"['GK', 'MF']",60.0,5 sao
-Thế Minh,2.2,['MF'],30.0,4 sao
-a Hoàng Anh,2.8,['MF'],50.0,5 sao
-Khương Peter,2.2,['MF'],40.0,3 sao
-Hải Anh,3.0,['MF'],60.0,5 sao
-Player 1,2.8,['MF'],40.0,6 sao
-Nam aaa,2.8,['MF'],40.0,6 sao
-Nam Gg,2.8,"['GK', 'MF']",40.0,6 sao
+Lăng,3.0,['MF'],50.0,6 sao
+Hiệp,3.7,['MF'],80.0,6 sao
+Minh,2.9,['MF'],60.0,4 sao
+Phúc,4.2,['MF'],80.0,9 sao
+Đức,4.1,"['GK', 'MF']",90.0,7 sao
+Hải,4.0,['MF'],80.0,8 sao
+Khanh,3.9,['MF'],80.0,7 sao
+Mạnh,4.1,['MF'],90.0,7 sao
+Khang,2.7,"['GK', 'MF']",50.0,4 sao
+Bảo,3.2,['MF'],70.0,4 sao
+Châu,3.6,['MF'],60.0,8 sao
+Văn,3.4,['MF'],60.0,7 sao
+Long,3.2,['MF'],60.0,6 sao
+Dự,5.0,['MF'],100.0,siêu sao
+Vũ,3.3,['MF'],70.0,5 sao
+Hoàng Nam,2.9,['MF'],40.0,7 sao
+Trung,2.8,['MF'],50.0,5 sao
+Thương,3.8,['MF'],70.0,8 sao
+Vương,3.6,['MF'],60.0,8 sao
+Quang,3.6,"['GK', 'MF']",70.0,7 sao
+Trí,3.0,"['GK', 'MF']",50.0,6 sao
+Thế Minh,2.8,['MF'],40.0,6 sao
+a Hoàng Anh,3.8,['MF'],70.0,8 sao
+Khương Peter,2.6,['MF'],40.0,5 sao
+Hải Anh,3.8,['MF'],70.0,8 sao
+Hoài Nam,2.9,['MF'],40.0,7 sao
+Phát,3.2,['MF'],50.0,7 sao
+Phong,3.2,"['GK', 'MF']",50.0,7 sao
+6 Hoa,3.6,['MF'],60.0,8 sao
+Hớn Tân,3.8,['MF'],70.0,8 sao
+Vỹ,4.5,['MF'],100.0,8 sao
+Trí trọc,3.8,['MF'],70.0,8 sao
+An,2.8,['MF'],50.0,5 sao
+Đức Lê PCCC,3.6,['MF'],70.0,7 sao
+Thành,3.3,['MF'],50.0,8 sao
+Tín,2.7,['MF'],,
+Bạn Lăng,2.9,['MF'],,
+Học trò Hải,3.2,['GK'],60.0,6 sao
+Đăng,2.8,['MF'],60.0,4 sao
+Em Hoàng Anh,2.8,['MF'],,
+Yên (bạn a Trí),2.8,['MF'],60,4 sao
