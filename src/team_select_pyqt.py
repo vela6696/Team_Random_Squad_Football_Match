@@ -1,4 +1,5 @@
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -10,6 +11,7 @@ from PyQt5.QtWidgets import (
     QSpinBox,
     QDoubleSpinBox,
     QMessageBox,
+    QTextEdit,
 )
 import team_utils as lib
 
@@ -90,4 +92,32 @@ class TeamSelectionWindow(QDialog):
             QMessageBox.warning(self, "Lỗi", str(e))
             return
 
-        QMessageBox.information(self, "Kết quả chia đội", result)
+        self.show_result_dialog(result)
+
+    def show_result_dialog(self, text: str) -> None:
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Kết quả chia đội")
+        layout = QVBoxLayout(dlg)
+
+        text_box = QTextEdit()
+        text_box.setReadOnly(True)
+        text_box.setPlainText(text)
+        layout.addWidget(text_box)
+
+        button_row = QHBoxLayout()
+
+        copy_btn = QPushButton("Copy")
+
+        def copy_to_clipboard():
+            QGuiApplication.clipboard().setText(text)
+
+        copy_btn.clicked.connect(copy_to_clipboard)
+        button_row.addWidget(copy_btn)
+
+        ok_btn = QPushButton("OK")
+        ok_btn.clicked.connect(dlg.accept)
+        button_row.addWidget(ok_btn)
+
+        layout.addLayout(button_row)
+
+        dlg.exec_()
