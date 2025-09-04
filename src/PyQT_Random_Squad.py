@@ -1,5 +1,4 @@
 import sys
-from pathlib import Path
 from typing import List
 
 import pandas as pd
@@ -22,8 +21,9 @@ from PyQt5.QtWidgets import (
 import team_utils
 import team_select_pyqt
 
-# Path to the CSV file containing player information
-CSV_FILE = Path(__file__).with_name("players.csv")
+# Path to the CSV file containing player information. When packaged as an
+# executable, this resolves to the directory containing the ``.exe``.
+CSV_PATH = team_utils.CSV_PATH
 
 
 class RandomSquadWindow(QMainWindow):
@@ -155,7 +155,7 @@ class RandomSquadWindow(QMainWindow):
     def load_data(self) -> None:
         """Load player data from the CSV file."""
         try:
-            self.df = pd.read_csv(CSV_FILE, encoding="utf-8-sig")
+            self.df = pd.read_csv(CSV_PATH, encoding="utf-8-sig")
         except FileNotFoundError:
             self.df = pd.DataFrame(columns=["name", "tier", "position", "stamina", "skill"])
 
@@ -213,7 +213,7 @@ class RandomSquadWindow(QMainWindow):
             self.df.loc[self.df["name"] == name, "tier"] = score
             self.df.loc[self.df["name"] == name, "skill"] = skill
             self.df.loc[self.df["name"] == name, "stamina"] = stamina
-            self.df.to_csv(CSV_FILE, index=False, encoding="utf-8-sig")
+            self.df.to_csv(CSV_PATH, index=False, encoding="utf-8-sig")
 
         self.result_label.setText(f"{name} (Tier: {score})")
 
@@ -241,7 +241,7 @@ class RandomSquadWindow(QMainWindow):
             self.result_label.setText(f"{name} đã tồn tại!")
             return
 
-        team_utils.add_new_player_to_csv(name, tier, positions, filename=str(CSV_FILE))
+        team_utils.add_new_player_to_csv(name, tier, positions, filename=str(CSV_PATH))
         self.result_label.setText(f"Đã thêm {name} ({tier})")
         self.load_data()
 

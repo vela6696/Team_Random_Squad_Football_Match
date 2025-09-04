@@ -1,16 +1,33 @@
-"""Utility wrappers around team_select_optimized_lib for PyQt GUI.
+"""Utility wrappers around ``team_select_optimized_lib`` for PyQt GUI.
 
 This module re-exports core functions and constants from
 ``team_select_optimized_lib`` so that the PyQt GUI does not import the
 original module directly. Any adjustments needed for the GUI can be
 implemented here without modifying the original library.
+
+The packaged executable built with PyInstaller runs from a temporary
+directory, so relying on ``__file__`` to locate ``players.csv`` fails. We
+need to resolve the CSV path differently when frozen into an executable
+to keep the GUI working after compilation.
 """
 from pathlib import Path
+import sys
 import team_select_optimized_lib as _base
 
 # Paths and constants
 CSV_FILE = _base.CSV_FILE
-CSV_PATH = Path(_base.__file__).with_name(CSV_FILE)
+
+
+def _resolve_csv_path() -> Path:
+    """Return path to ``players.csv`` for both source and packaged runs."""
+    # When frozen by PyInstaller, ``sys.argv[0]`` points to the executable
+    # location. Otherwise fall back to the location of the library module.
+    if getattr(sys, "frozen", False):
+        return Path(sys.argv[0]).resolve().parent / CSV_FILE
+    return Path(_base.__file__).with_name(CSV_FILE)
+
+
+CSV_PATH = _resolve_csv_path()
 
 TEAM_COUNT = _base.TEAM_COUNT
 NAME_KEY = _base.NAME_KEY
