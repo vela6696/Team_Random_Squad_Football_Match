@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
 )
 
 import team_select_optimized_lib
+import team_select_pyqt
 
 # Path to the CSV file containing player information
 CSV_FILE = Path(__file__).with_name("players.csv")
@@ -217,7 +218,8 @@ class RandomSquadWindow(QMainWindow):
         self.result_label.setText(f"{name} (Tier: {score})")
 
     def handle_attendance(self) -> None:
-        team_select_optimized_lib.show_attendance_gui()
+        dlg = team_select_pyqt.TeamSelectionWindow(self)
+        dlg.exec_()
 
     def get_selected_positions(self) -> List[str]:
         return [item.text() for item in self.pos_list.selectedItems()]
