@@ -39,7 +39,7 @@ class TeamSelectionWindow(QDialog):
         self.players_spin.setValue(7)
         input_row.addWidget(self.players_spin)
 
-        input_row.addWidget(QLabel("Tier threshold:"))
+        input_row.addWidget(QLabel("Điểm ngưỡng tạ:"))
         self.tier_spin = QDoubleSpinBox()
         self.tier_spin.setRange(0.0, 10.0)
         self.tier_spin.setSingleStep(0.1)

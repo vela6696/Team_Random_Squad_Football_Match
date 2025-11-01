@@ -17,9 +17,9 @@ Vũ,3.3,['MF'],70.0,5 sao
 Hoàng Nam,2.9,['MF'],40.0,7 sao
 Trung,2.8,['MF'],50.0,5 sao
 Thương,3.8,['MF'],70.0,8 sao
-Vương,3.6,['MF'],60.0,8 sao
+Vương,4.0,['MF'],60.0,10 sao
 Quang,3.6,"['GK', 'MF']",70.0,7 sao
-Trí,3.0,"['GK', 'MF']",50.0,6 sao
+Trí,3.0,"['GK', 'MF']",50,6 sao
 Thế Minh,2.8,['MF'],40.0,6 sao
 a Hoàng Anh,3.8,['MF'],70.0,8 sao
 Khương Peter,2.6,['MF'],40.0,5 sao
@@ -39,4 +39,8 @@ Bạn Lăng,2.9,['MF'],,
 Học trò Hải,3.2,['GK'],60.0,6 sao
 Đăng,2.8,['MF'],60.0,4 sao
 Em Hoàng Anh,2.8,['MF'],,
-Yên (bạn a Trí),2.8,['MF'],60,4 sao
+Yên (bạn a Trí),2.8,['MF'],60.0,4 sao
+Htro Hải (Hoàng),2.5,['MF'],,
+Thiện (bạn Đức),2.0,['MF'],,
+Tân (hs Hải),3.0,['MF'],,
+Na,4.3,['MF'],,
