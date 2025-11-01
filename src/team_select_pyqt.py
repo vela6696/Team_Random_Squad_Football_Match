@@ -46,13 +46,25 @@ class TeamSelectionWindow(QDialog):
         self.tier_spin.setValue(lib.get_tier_threshold())
         input_row.addWidget(self.tier_spin)
 
+        input_row.addWidget(QLabel("Điểm ngưỡng gánh:"))
+        self.carrier_spin = QDoubleSpinBox()
+        self.carrier_spin.setRange(0.0, 10.0)
+        self.carrier_spin.setSingleStep(0.1)
+        self.carrier_spin.setValue(lib.get_carrier_threshold())
+        input_row.addWidget(self.carrier_spin)
+
         layout.addLayout(input_row)
 
         # Player checklist
         self.player_list = QListWidget()
         players = lib.read_players_from_csv(str(CSV_PATH))
         for p in players:
-            item = QListWidgetItem(f"{p[lib.NAME_KEY]} (Tier: {p[lib.TIER_KEY]})")
+            strength = p.get(lib.STRENGTH_KEY)
+            if not strength:
+                strength = "balanced"
+            item = QListWidgetItem(
+                f"{p[lib.NAME_KEY]} (Tier: {p[lib.TIER_KEY]}, Strength: {strength})"
+            )
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             item.setCheckState(Qt.Unchecked)
             item.setData(Qt.UserRole, p)
@@ -66,7 +78,34 @@ class TeamSelectionWindow(QDialog):
     def handle_shuffle(self):
         team_count = self.team_spin.value()
         players_per_team = self.players_spin.value()
-        lib.set_tier_threshold(self.tier_spin.value())
+        tier_threshold = self.tier_spin.value()
+        carrier_threshold = self.carrier_spin.value()
+
+        if tier_threshold >= carrier_threshold:
+            QMessageBox.warning(self, "Lỗi", "Ngưỡng gánh phải lớn hơn ngưỡng tạ.")
+            return
+
+        try:
+            lib.set_carrier_threshold(carrier_threshold)
+            lib.set_tier_threshold(tier_threshold)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Lỗi", str(exc))
+            return
+
+        for i in range(self.player_list.count()):
+            item = self.player_list.item(i)
+            player = item.data(Qt.UserRole)
+            tier = player.get(lib.TIER_KEY, 0)
+            if tier <= tier_threshold:
+                strength = "weak"
+            elif tier >= carrier_threshold:
+                strength = "strong"
+            else:
+                strength = "balanced"
+            player[lib.STRENGTH_KEY] = strength
+            item.setText(
+                f"{player[lib.NAME_KEY]} (Tier: {tier}, Strength: {strength})"
+            )
 
         selected_players = [
             self.player_list.item(i).data(Qt.UserRole)

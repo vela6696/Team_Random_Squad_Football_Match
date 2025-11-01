@@ -1,11 +1,13 @@
 # === Config ===
 CSV_FILE = "players.csv"
 TIER_THRESHOLD_LOW = 2.8            # Players below this tier are considered low tier
+TIER_THRESHOLD_HIGH = 3.8           # Players above this tier are considered strong tier
 TEAM_COUNT = 3                     # Number of teams to split into
 REQUIRE_GK_PER_TEAM = True          # Whether each team must have a GK
 TIER_KEY = "tier"                   # Column used to evaluate players
 POSITION_KEY = "position"
 NAME_KEY = "name"
+STRENGTH_KEY = "strength"
 GK_LABEL = "GK"
 DEFAULT_ENCODING = "utf-8"
 
@@ -16,7 +18,20 @@ import heapq
 import pandas as pd
 import tkinter as tk
 from tkinter import messagebox
-from functools import partial
+
+
+def classify_strength_from_tier(tier_value):
+    """Return the strength classification for a tier value."""
+    try:
+        tier = float(tier_value)
+    except (TypeError, ValueError):
+        return "unknown"
+
+    if tier <= TIER_THRESHOLD_LOW:
+        return "weak"
+    if tier >= TIER_THRESHOLD_HIGH:
+        return "strong"
+    return "balanced"
 
 player_vars = []
 
@@ -48,10 +63,14 @@ def show_popup(title, text):
 
 def write_players_to_csv(filename, players):
     df = pd.DataFrame(players)
-    df.to_csv(filename, index=False)
+    if TIER_KEY in df.columns:
+        df[STRENGTH_KEY] = df[TIER_KEY].apply(classify_strength_from_tier)
+    df.to_csv(filename, index=False, encoding=DEFAULT_ENCODING)
 
 def read_players_from_csv(filename):
     df = pd.read_csv(filename, encoding=DEFAULT_ENCODING)
+    if TIER_KEY in df.columns:
+        df[STRENGTH_KEY] = df[TIER_KEY].apply(classify_strength_from_tier)
     df[POSITION_KEY] = df[POSITION_KEY].apply(
         lambda x: x.strip("[]").replace("'", "").split(', ') if isinstance(x, str) else []
     )
@@ -128,45 +147,93 @@ def balance_teams(players, team_count=2):
 
     # Loại GK khỏi player pool
     remaining_players = [p for p in players if p not in selected_gks]
-    low_tier_players = [p for p in remaining_players if p[TIER_KEY] <= TIER_THRESHOLD_LOW]
-    other_players = [p for p in remaining_players if p[TIER_KEY] > TIER_THRESHOLD_LOW]
+
+    low_tier_players = []
+    high_tier_players = []
+    balanced_players = []
+
+    for player in remaining_players:
+        tier_value = player[TIER_KEY]
+        if tier_value <= TIER_THRESHOLD_LOW:
+            player[STRENGTH_KEY] = "weak"
+            low_tier_players.append(player)
+        elif tier_value >= TIER_THRESHOLD_HIGH:
+            player[STRENGTH_KEY] = "strong"
+            high_tier_players.append(player)
+        else:
+            player[STRENGTH_KEY] = "balanced"
+            balanced_players.append(player)
 
     # Chia đều low tier trước
     teams = [[] for _ in range(team_count)]
     for idx, player in enumerate(low_tier_players):
         teams[idx % team_count].append(player)
 
+    # Chia đều high tier để mỗi đội có người gánh
+    for idx, player in enumerate(high_tier_players):
+        teams[idx % team_count].append(player)
+
     # Số lượng còn lại cần chia
-    num_remaining = len(other_players)
     players_per_team = len(players) // team_count
-    others_per_team = players_per_team - len(teams[0]) - 1  # trừ low-tier và GK
+    gk_per_team = 1 if REQUIRE_GK_PER_TEAM else 0
+    others_per_team = players_per_team - len(teams[0]) - gk_per_team
+
+    if others_per_team < 0:
+        raise ValueError("Tổng số người yếu/khỏe vượt quá giới hạn mỗi đội. Điều chỉnh lại ngưỡng.")
 
     best_balance = float('inf')
     best_team_combo = None
 
-    # Generate combinations
-    for combo in itertools.combinations(range(len(other_players)), others_per_team * (team_count - 1)):
+    combinations_needed = others_per_team * (team_count - 1)
+
+    if combinations_needed <= 0:
+        candidate_pools = [list(team) for team in teams]
+        for i in range(team_count):
+            if selected_gks[i]:
+                candidate_pools[i].append(selected_gks[i])
+        return candidate_pools
+
+    if len(balanced_players) < combinations_needed:
+        # Không đủ người cân bằng để brute-force, chia đều phần còn lại
+        remaining_pool = list(balanced_players)
         temp_teams = [list(team) for team in teams]
-        used = set(combo)
-        indices = list(combo) + [i for i in range(len(other_players)) if i not in used]
 
-        for i in range(team_count - 1):
-            temp_teams[i].extend([other_players[indices[j]] for j in range(i * others_per_team, (i + 1) * others_per_team)])
+        for i in range(team_count):
+            needed = players_per_team - gk_per_team - len(temp_teams[i])
+            temp_teams[i].extend(remaining_pool[:needed])
+            remaining_pool = remaining_pool[needed:]
 
-        # Add remaining to last team
-        temp_teams[-1].extend([other_players[indices[j]] for j in range((team_count - 1) * others_per_team, len(indices))])
-
-        # Add GK
         for i in range(team_count):
             if selected_gks[i]:
                 temp_teams[i].append(selected_gks[i])
 
         scores = [evaluate_team(team) for team in temp_teams]
-        balance = max(scores) - min(scores)
+        best_team_combo = temp_teams
+        best_balance = max(scores) - min(scores)
+    else:
+        for combo in itertools.combinations(range(len(balanced_players)), combinations_needed):
+            temp_teams = [list(team) for team in teams]
+            used = set(combo)
+            indices = list(combo) + [i for i in range(len(balanced_players)) if i not in used]
 
-        if balance < best_balance:
-            best_balance = balance
-            best_team_combo = temp_teams
+            for i in range(team_count - 1):
+                start = i * others_per_team
+                end = (i + 1) * others_per_team
+                temp_teams[i].extend([balanced_players[indices[j]] for j in range(start, end)])
+
+            temp_teams[-1].extend([balanced_players[indices[j]] for j in range((team_count - 1) * others_per_team, len(indices))])
+
+            # Add GK
+            for i in range(team_count):
+                if selected_gks[i]:
+                    temp_teams[i].append(selected_gks[i])
+
+            scores = [evaluate_team(team) for team in temp_teams]
+            balance = max(scores) - min(scores)
+
+            if balance < best_balance:
+                best_balance = balance
+                best_team_combo = temp_teams
 
     if not best_team_combo:
         raise RuntimeError("Unable to balance teams.")
@@ -190,7 +257,10 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
         result.append(f"\nTeam {idx}:")
         for i, player in enumerate(team, start=1):
             gk_flag = " (GK)" if GK_LABEL in player[POSITION_KEY] else ""
-            result.append(f"{i}. {player[NAME_KEY]} (Tier: {player[TIER_KEY]}){gk_flag}")
+            strength = player.get(STRENGTH_KEY, classify_strength_from_tier(player[TIER_KEY]))
+            result.append(
+                f"{i}. {player[NAME_KEY]} (Tier: {player[TIER_KEY]}, Strength: {strength}){gk_flag}"
+            )
         score = evaluate_team(team)
         team_scores.append(score)
         result.append(f"Team {idx} Score: {score} (Players: {len(team)})")
@@ -245,13 +315,14 @@ def add_new_player_to_csv(name, tier, positions, filename=CSV_FILE):
     new_player = {
         NAME_KEY: name,
         TIER_KEY: float(tier),
-        POSITION_KEY: positions
+        POSITION_KEY: positions,
+        STRENGTH_KEY: classify_strength_from_tier(tier)
     }
 
     try:
         df = pd.read_csv(filename, encoding=DEFAULT_ENCODING)
     except FileNotFoundError:
-        df = pd.DataFrame(columns=[NAME_KEY, TIER_KEY, POSITION_KEY])
+        df = pd.DataFrame(columns=[NAME_KEY, TIER_KEY, POSITION_KEY, STRENGTH_KEY])
 
     df = df._append(new_player, ignore_index=True)
     df.to_csv(filename, index=False, encoding=DEFAULT_ENCODING)
@@ -346,30 +417,42 @@ def show_attendance_gui(parent=None):
     tier_threshold_entry.insert(0, str(TIER_THRESHOLD_LOW))  # default = 2.8
     tier_threshold_entry.grid(row=0, column=5, padx=5)
 
+    tk.Label(input_frame, text="Carrier threshold:").grid(row=0, column=6, padx=5)
+    carrier_threshold_entry = tk.Entry(input_frame, width=5, validate="key")
+    carrier_threshold_entry.insert(0, str(TIER_THRESHOLD_HIGH))
+    carrier_threshold_entry.grid(row=0, column=7, padx=5)
+
     # enforce numeric only
     def validate_numeric(P):
         return P == "" or P.replace(".", "", 1).isdigit()
 
     vcmd = (top.register(validate_numeric), "%P")
     tier_threshold_entry.config(validatecommand=vcmd)
+    carrier_threshold_entry.config(validatecommand=vcmd)
 
     # ==== Checkboxes for player attendance ====
     for player in all_players:
         var = tk.IntVar(value=0)
-        cb_text = f"{player[NAME_KEY]} (Tier: {player[TIER_KEY]})"
+        strength = player.get(STRENGTH_KEY, classify_strength_from_tier(player[TIER_KEY]))
+        cb_text = f"{player[NAME_KEY]} (Tier: {player[TIER_KEY]}, Strength: {strength})"
         cb = tk.Checkbutton(scrollable_frame, text=cb_text, variable=var)
         cb.pack(anchor='w')
         player_vars.append((var, player[NAME_KEY]))
 
     def handle_shuffle():
-        global TIER_THRESHOLD_LOW
+        global TIER_THRESHOLD_LOW, TIER_THRESHOLD_HIGH
         # Get inputs
         try:
             team_count = int(team_count_entry.get())
             players_per_team = int(players_per_team_entry.get())
             TIER_THRESHOLD_LOW = float(tier_threshold_entry.get())
+            TIER_THRESHOLD_HIGH = float(carrier_threshold_entry.get())
         except ValueError:
-            messagebox.showerror("Lỗi", "Số đội và người/đội phải là số nguyên.")
+            messagebox.showerror("Lỗi", "Vui lòng nhập số hợp lệ cho cấu hình chia đội.")
+            return
+
+        if TIER_THRESHOLD_LOW >= TIER_THRESHOLD_HIGH:
+            messagebox.showerror("Lỗi", "Ngưỡng mạnh phải lớn hơn ngưỡng yếu.")
             return
 
         if team_count < 2 or players_per_team < 1:

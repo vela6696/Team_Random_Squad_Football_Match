@@ -33,6 +33,7 @@ TEAM_COUNT = _base.TEAM_COUNT
 NAME_KEY = _base.NAME_KEY
 TIER_KEY = _base.TIER_KEY
 POSITION_KEY = _base.POSITION_KEY
+STRENGTH_KEY = _base.STRENGTH_KEY
 GK_LABEL = _base.GK_LABEL
 
 # Configuration helpers
@@ -44,7 +45,21 @@ def get_tier_threshold() -> float:
 
 def set_tier_threshold(value: float) -> None:
     """Update the low-tier threshold used in team balancing."""
+    if value >= _base.TIER_THRESHOLD_HIGH:
+        raise ValueError("Tier threshold must be lower than carrier threshold.")
     _base.TIER_THRESHOLD_LOW = value
+
+
+def get_carrier_threshold() -> float:
+    """Return the current carrier (strong) threshold."""
+    return _base.TIER_THRESHOLD_HIGH
+
+
+def set_carrier_threshold(value: float) -> None:
+    """Update the high-tier threshold used to tag strong players."""
+    if value <= _base.TIER_THRESHOLD_LOW:
+        raise ValueError("Carrier threshold must be greater than tier threshold.")
+    _base.TIER_THRESHOLD_HIGH = value
 
 # Re-exported functions
 read_players_from_csv = _base.read_players_from_csv
