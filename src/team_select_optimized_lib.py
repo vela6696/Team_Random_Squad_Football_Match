@@ -359,19 +359,24 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2, 
     fairness_output.append(
         f"Selected via: {selection['selection']} | Attempt: {selection['attempt_index']} | Retries used: {selection['retries_used']}"
     )
-    for line in ["DF", "MF", "ST"]:
-        fairness_output.append(
-            (
-                f"{line} median T1/T2: {fairness['medians']['team1'][line]} / {fairness['medians']['team2'][line]} "
-                f"(Δ {fairness['median_delta'][line]}, threshold {DEFAULT_MEDIAN_DELTA[line]})"
+
+    if team_count == 2:
+        for line in ["DF", "MF", "ST"]:
+            fairness_output.append(
+                (
+                    f"{line} median T1/T2: {fairness['medians']['team1'][line]} / {fairness['medians']['team2'][line]} "
+                    f"(Δ {fairness['median_delta'][line]}, threshold {DEFAULT_MEDIAN_DELTA[line]})"
+                )
             )
-        )
-        fairness_output.append(
-            (
-                f"{line} IQR T1/T2: {fairness['iqr']['team1'][line]} / {fairness['iqr']['team2'][line]} "
-                f"(Δ {fairness['iqr_delta'][line]}, threshold {DEFAULT_IQR_DELTA[line]})"
+            fairness_output.append(
+                (
+                    f"{line} IQR T1/T2: {fairness['iqr']['team1'][line]} / {fairness['iqr']['team2'][line]} "
+                    f"(Δ {fairness['iqr_delta'][line]}, threshold {DEFAULT_IQR_DELTA[line]})"
+                )
             )
-        )
+    else:
+        fairness_output.append("Two-team line fairness checks are skipped when team_count > 2.")
+
     print("\n".join(fairness_output))
 
     text_result = "\n".join(result)
