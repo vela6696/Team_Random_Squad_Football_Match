@@ -5,20 +5,28 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QListWidget,
-    QListWidgetItem,
     QPushButton,
     QSpinBox,
     QDoubleSpinBox,
     QMessageBox,
     QTextEdit,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
 )
 import team_utils as lib
 
 CSV_PATH = lib.CSV_PATH
 
+
 class TeamSelectionWindow(QDialog):
     """PyQt window for selecting players and forming balanced teams."""
+
+    SELECT_COL = 0
+    NAME_COL = 1
+    TIER_COL = 2
+    POSITION_COL = 3
+    STRENGTH_COL = 4
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -55,25 +63,56 @@ class TeamSelectionWindow(QDialog):
 
         layout.addLayout(input_row)
 
-        # Player checklist
-        self.player_list = QListWidget()
-        players = lib.read_players_from_csv(str(CSV_PATH))
-        for p in players:
-            strength = p.get(lib.STRENGTH_KEY)
-            if not strength:
-                strength = "balanced"
-            item = QListWidgetItem(
-                f"{p[lib.NAME_KEY]} (Tier: {p[lib.TIER_KEY]}, Strength: {strength})"
-            )
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Unchecked)
-            item.setData(Qt.UserRole, p)
-            self.player_list.addItem(item)
-        layout.addWidget(self.player_list)
+        # Player table (read-only values + selectable checkbox)
+        self.player_table = QTableWidget()
+        self.player_table.setColumnCount(5)
+        self.player_table.setHorizontalHeaderLabels(["Chọn", "Tên", "Tier", "Vị trí", "Strength"])
+        self.player_table.verticalHeader().setVisible(False)
+        self.player_table.setSelectionMode(QTableWidget.NoSelection)
+        self.player_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.player_table.setFocusPolicy(Qt.NoFocus)
+        self.player_table.horizontalHeader().setSectionResizeMode(self.NAME_COL, QHeaderView.Stretch)
+        self.player_table.horizontalHeader().setSectionResizeMode(self.SELECT_COL, QHeaderView.ResizeToContents)
+        self.player_table.horizontalHeader().setSectionResizeMode(self.TIER_COL, QHeaderView.ResizeToContents)
+        self.player_table.horizontalHeader().setSectionResizeMode(self.POSITION_COL, QHeaderView.ResizeToContents)
+        self.player_table.horizontalHeader().setSectionResizeMode(self.STRENGTH_COL, QHeaderView.ResizeToContents)
+
+        self._load_players()
+        layout.addWidget(self.player_table)
 
         self.shuffle_button = QPushButton("Chia đội!!!")
         self.shuffle_button.clicked.connect(self.handle_shuffle)
         layout.addWidget(self.shuffle_button)
+
+    def _make_readonly_item(self, value: str) -> QTableWidgetItem:
+        item = QTableWidgetItem(value)
+        item.setFlags(Qt.ItemIsEnabled)
+        return item
+
+    def _load_players(self) -> None:
+        players = lib.read_players_from_csv(str(CSV_PATH))
+        self.player_table.setRowCount(len(players))
+
+        for row, player in enumerate(players):
+            strength = player.get(lib.STRENGTH_KEY)
+            if not strength:
+                strength = "balanced"
+            player[lib.STRENGTH_KEY] = strength
+
+            checkbox_item = QTableWidgetItem()
+            checkbox_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)
+            checkbox_item.setCheckState(Qt.Unchecked)
+            checkbox_item.setData(Qt.UserRole, player)
+            self.player_table.setItem(row, self.SELECT_COL, checkbox_item)
+
+            self.player_table.setItem(row, self.NAME_COL, self._make_readonly_item(str(player.get(lib.NAME_KEY, ""))))
+            self.player_table.setItem(row, self.TIER_COL, self._make_readonly_item(str(player.get(lib.TIER_KEY, ""))))
+            self.player_table.setItem(
+                row,
+                self.POSITION_COL,
+                self._make_readonly_item(str(player.get(lib.POSITION_KEY, ""))),
+            )
+            self.player_table.setItem(row, self.STRENGTH_COL, self._make_readonly_item(str(strength)))
 
     def handle_shuffle(self):
         team_count = self.team_spin.value()
@@ -92,9 +131,10 @@ class TeamSelectionWindow(QDialog):
             QMessageBox.warning(self, "Lỗi", str(exc))
             return
 
-        for i in range(self.player_list.count()):
-            item = self.player_list.item(i)
-            player = item.data(Qt.UserRole)
+        selected_players = []
+        for row in range(self.player_table.rowCount()):
+            check_item = self.player_table.item(row, self.SELECT_COL)
+            player = check_item.data(Qt.UserRole)
             tier = player.get(lib.TIER_KEY, 0)
             if tier <= tier_threshold:
                 strength = "weak"
@@ -103,15 +143,10 @@ class TeamSelectionWindow(QDialog):
             else:
                 strength = "balanced"
             player[lib.STRENGTH_KEY] = strength
-            item.setText(
-                f"{player[lib.NAME_KEY]} (Tier: {tier}, Strength: {strength})"
-            )
+            self.player_table.item(row, self.STRENGTH_COL).setText(strength)
 
-        selected_players = [
-            self.player_list.item(i).data(Qt.UserRole)
-            for i in range(self.player_list.count())
-            if self.player_list.item(i).checkState() == Qt.Checked
-        ]
+            if check_item.checkState() == Qt.Checked:
+                selected_players.append(player)
 
         if len(selected_players) < team_count * players_per_team:
             QMessageBox.warning(
