@@ -347,8 +347,10 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2, 
                 f"{i}. {player[NAME_KEY]} (Tier: {player[TIER_KEY]}, Position: {position})"
             )
         score = evaluate_team(team)
+        team_median = median([player[TIER_KEY] for player in team])
         team_scores.append(score)
         result.append(f"Team {idx} Score: {score} (Players: {len(team)})")
+        result.append(f"Team {idx} Median Point: {team_median}")
 
     balance_diff = max(team_scores) - min(team_scores)
     result.append(f"\nBalance Difference: {balance_diff}")
