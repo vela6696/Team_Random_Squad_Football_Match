@@ -138,6 +138,18 @@ def evaluate_team(team):
 #    return teams_list[best_index]
 
 # new team balance
+def _assign_players_in_rounds(teams, players, team_count):
+    """Assign players by batches of top-N (N = team_count) with random team mapping."""
+    random.shuffle(players)
+    players.sort(key=lambda p: p[TIER_KEY], reverse=True)
+
+    for start in range(0, len(players), team_count):
+        batch = players[start:start + team_count]
+        random.shuffle(batch)
+        for team_idx, player in enumerate(batch):
+            teams[team_idx].append(player)
+
+
 def balance_teams(players, team_count=2):
     if len(players) % team_count != 0:
         raise ValueError("The selected player count must be divisible by the number of teams.")
@@ -152,13 +164,18 @@ def balance_teams(players, team_count=2):
         if position not in players_by_position:
             raise ValueError(f"Unsupported position '{position}' for {player[NAME_KEY]}.")
         players_by_position[position].append(player)
-
         player[STRENGTH_KEY] = classify_strength_from_tier(player[TIER_KEY])
 
-    if REQUIRE_GK_PER_TEAM and len(players_by_position[GK_LABEL]) < team_count:
+    gk_players = players_by_position[GK_LABEL]
+    if REQUIRE_GK_PER_TEAM and len(gk_players) < team_count:
         raise ValueError(f"Not enough {GK_LABEL}s to form {team_count} teams.")
 
-    for position in position_order:
+    mandatory_gks = list(gk_players[:team_count])
+    _assign_players_in_rounds(teams, mandatory_gks, team_count)
+
+    extra_gks = gk_players[team_count:]
+
+    for position in ["DF", "MF", "ST"]:
         position_players = players_by_position[position]
         if not position_players:
             continue
@@ -168,14 +185,10 @@ def balance_teams(players, team_count=2):
                 f"Position {position} has {len(position_players)} players, which cannot be evenly split across {team_count} teams."
             )
 
-        random.shuffle(position_players)
-        position_players.sort(key=lambda p: p[TIER_KEY], reverse=True)
+        _assign_players_in_rounds(teams, position_players, team_count)
 
-        for start in range(0, len(position_players), team_count):
-            batch = position_players[start:start + team_count]
-            random.shuffle(batch)
-            for team_idx, player in enumerate(batch):
-                teams[team_idx].append(player)
+    if extra_gks:
+        _assign_players_in_rounds(teams, extra_gks, team_count)
 
     return teams
 
@@ -245,11 +258,11 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
 #    return "\n".join(result)
 
 #insert new players
-def add_new_player_to_csv(name, tier, positions, filename=CSV_FILE):
-    if not isinstance(positions, str):
+def add_new_player_to_csv(name, tier, position, filename=CSV_FILE):
+    if not isinstance(position, str):
         raise ValueError("Position must be a single string value: GK, DF, MF, or ST.")
 
-    position = normalize_position(positions)
+    position = normalize_position(position)
     if position not in {GK_LABEL, "DF", "MF", "ST"}:
         raise ValueError("Position must be one of: GK, DF, MF, ST.")
 

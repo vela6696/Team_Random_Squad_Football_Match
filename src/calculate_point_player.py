@@ -179,14 +179,10 @@ tk.Label(root, text="Tier điểm (ví dụ: 2.7):").pack()
 new_tier_entry = tk.Entry(root)
 new_tier_entry.pack()
 
-tk.Label(root, text="Vị trí (chọn nhiều):").pack()
-positions_listbox = tk.Listbox(root, selectmode=tk.MULTIPLE, height=6)
-for pos in ["GK", "MF"]:
-    positions_listbox.insert(tk.END, pos)
-positions_listbox.pack()
-
-def get_selected_positions():
-    return [positions_listbox.get(i) for i in positions_listbox.curselection()]
+tk.Label(root, text="Vị trí:").pack()
+position_combo = ttk.Combobox(root, values=["GK", "DF", "MF", "ST"], state="readonly")
+position_combo.current(2)
+position_combo.pack()
 
 def on_add_new_player():
     name = new_name_entry.get().strip()
@@ -196,9 +192,9 @@ def on_add_new_player():
         result_label.config(text="Lỗi: Tier phải là số!")
         return
 
-    positions = get_selected_positions()
+    position = position_combo.get().strip()
 
-    if not name or not positions:
+    if not name or not position:
         result_label.config(text="Tên và vị trí không được để trống.")
         return
 
@@ -208,7 +204,7 @@ def on_add_new_player():
         return
 
     # Add to CSV
-    team_select_optimized_lib.add_new_player_to_csv(name, tier, positions, filename=CSV_FILE)
+    team_select_optimized_lib.add_new_player_to_csv(name, tier, position, filename=CSV_FILE)
     result_label.config(text=f"Đã thêm {name} ({tier})")
 
     # Update combobox
