@@ -2,7 +2,7 @@
 CSV_FILE = "players.csv"
 TIER_THRESHOLD_LOW = 2.8            # Players below this tier are considered low tier
 TIER_THRESHOLD_HIGH = 3.8           # Players above this tier are considered strong tier
-TEAM_COUNT = 3                     # Number of teams to split into
+TEAM_COUNT = 2                     # Number of teams to split into
 REQUIRE_GK_PER_TEAM = True          # Whether each team must have a GK
 TIER_KEY = "tier"                   # Column used to evaluate players
 POSITION_KEY = "position"
