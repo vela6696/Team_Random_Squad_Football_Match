@@ -302,8 +302,9 @@ def balance_teams(players, team_count=2):
         player[STRENGTH_KEY] = classify_strength_from_tier(player[TIER_KEY])
 
     gk_players = players_by_position[GK_LABEL]
-    if REQUIRE_GK_PER_TEAM and len(gk_players) < team_count:
-        raise ValueError(f"Not enough {GK_LABEL}s to form {team_count} teams.")
+    minimum_required_gk = 2
+    if REQUIRE_GK_PER_TEAM and len(gk_players) < minimum_required_gk:
+        raise ValueError(f"Not enough {GK_LABEL}s. At least {minimum_required_gk} are required.")
 
     mandatory_gks = list(gk_players[:team_count])
     if mandatory_gks:
