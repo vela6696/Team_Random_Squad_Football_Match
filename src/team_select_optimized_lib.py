@@ -2,7 +2,7 @@
 CSV_FILE = "players.csv"
 TIER_THRESHOLD_LOW = 2.8            # Players below this tier are considered low tier
 TIER_THRESHOLD_HIGH = 3.8           # Players above this tier are considered strong tier
-TEAM_COUNT = 3                     # Number of teams to split into
+TEAM_COUNT = 2                     # Number of teams to split into
 REQUIRE_GK_PER_TEAM = True          # Whether each team must have a GK
 TIER_KEY = "tier"                   # Column used to evaluate players
 POSITION_KEY = "position"
@@ -12,12 +12,11 @@ GK_LABEL = "GK"
 DEFAULT_ENCODING = "utf-8"
 
 # === Core Logic ===
-import itertools
 import random
-import heapq
 import pandas as pd
 import tkinter as tk
 from tkinter import messagebox
+from fairness_config import DEFAULT_MEDIAN_DELTA, DEFAULT_IQR_DELTA, MAX_RETRIES
 
 
 def classify_strength_from_tier(tier_value):
@@ -71,13 +70,144 @@ def read_players_from_csv(filename):
     df = pd.read_csv(filename, encoding=DEFAULT_ENCODING)
     if TIER_KEY in df.columns:
         df[STRENGTH_KEY] = df[TIER_KEY].apply(classify_strength_from_tier)
-    df[POSITION_KEY] = df[POSITION_KEY].apply(
-        lambda x: x.strip("[]").replace("'", "").split(', ') if isinstance(x, str) else []
-    )
+    df[POSITION_KEY] = df[POSITION_KEY].apply(normalize_position)
     return df.to_dict(orient='records')
+
+
+def normalize_position(position_value):
+    """Normalize position values to a single label: GK/DF/MF/ST."""
+    if not isinstance(position_value, str):
+        return ""
+
+    cleaned = position_value.strip()
+    if cleaned.startswith("[") and cleaned.endswith("]"):
+        parts = cleaned.strip("[]").replace("'", "").split(',')
+        cleaned = parts[0].strip() if parts else ""
+
+    return cleaned.upper()
 
 def evaluate_team(team):
     return sum(player[TIER_KEY] for player in team)
+
+
+def median(values):
+    """Compute median for odd and even value counts."""
+    if not values:
+        return 0.0
+
+    ordered = sorted(float(value) for value in values)
+    mid = len(ordered) // 2
+
+    if len(ordered) % 2 == 1:
+        return ordered[mid]
+    return (ordered[mid - 1] + ordered[mid]) / 2
+
+
+def iqr(values):
+    """Compute Tukey IQR (median of halves)."""
+    if not values:
+        return 0.0
+
+    ordered = sorted(float(value) for value in values)
+    n = len(ordered)
+    mid = n // 2
+
+    if n % 2 == 1:
+        lower = ordered[:mid]
+        upper = ordered[mid + 1:]
+    else:
+        lower = ordered[:mid]
+        upper = ordered[mid:]
+
+    if not lower or not upper:
+        return 0.0
+
+    q1 = median(lower)
+    q3 = median(upper)
+    return q3 - q1
+
+
+def _line_tiers(team):
+    lines = {"DF": [], "MF": [], "ST": []}
+    for player in team:
+        line = normalize_position(player.get(POSITION_KEY, ""))
+        if line in lines:
+            lines[line].append(float(player[TIER_KEY]))
+    return lines
+
+
+def _evaluate_fairness(teams):
+    if len(teams) != 2:
+        return {
+            "accepted": True,
+            "medians": {},
+            "iqr": {},
+            "median_delta": {},
+            "iqr_delta": {},
+            "violation_score": 0.0,
+        }
+
+    team_line_tiers = [_line_tiers(teams[0]), _line_tiers(teams[1])]
+    medians = {"team1": {}, "team2": {}}
+    iqrs = {"team1": {}, "team2": {}}
+    median_delta = {}
+    iqr_delta = {}
+    violation_score = 0.0
+    accepted = True
+
+    for line in ["DF", "MF", "ST"]:
+        t1_values = team_line_tiers[0][line]
+        t2_values = team_line_tiers[1][line]
+
+        medians["team1"][line] = median(t1_values)
+        medians["team2"][line] = median(t2_values)
+        iqrs["team1"][line] = iqr(t1_values)
+        iqrs["team2"][line] = iqr(t2_values)
+
+        median_delta[line] = abs(medians["team1"][line] - medians["team2"][line])
+        iqr_delta[line] = abs(iqrs["team1"][line] - iqrs["team2"][line])
+
+        epsilon = 1e-9
+        median_over = max(0.0, median_delta[line] - DEFAULT_MEDIAN_DELTA[line] - epsilon)
+        iqr_over = max(0.0, iqr_delta[line] - DEFAULT_IQR_DELTA[line] - epsilon)
+        violation_score += median_over + iqr_over
+
+        if median_delta[line] - DEFAULT_MEDIAN_DELTA[line] > epsilon or iqr_delta[line] - DEFAULT_IQR_DELTA[line] > epsilon:
+            accepted = False
+
+    return {
+        "accepted": accepted,
+        "medians": medians,
+        "iqr": iqrs,
+        "median_delta": median_delta,
+        "iqr_delta": iqr_delta,
+        "violation_score": violation_score,
+    }
+
+
+def generate_balanced_teams(players, team_count=2, max_retries=MAX_RETRIES):
+    attempts = []
+
+    for attempt_idx in range(1, max_retries + 1):
+        candidate_teams = balance_teams(players, team_count=team_count)
+        fairness = _evaluate_fairness(candidate_teams)
+        attempt_payload = {
+            "teams": candidate_teams,
+            "fairness": fairness,
+            "attempt_index": attempt_idx,
+        }
+        attempts.append(attempt_payload)
+        if fairness["accepted"]:
+            attempt_payload["selection"] = "accepted"
+            attempt_payload["retries_used"] = attempt_idx - 1
+            attempt_payload["attempts_evaluated"] = attempts
+            return attempt_payload
+
+    chosen = min(attempts, key=lambda attempt: attempt["fairness"]["violation_score"])
+    chosen["selection"] = "fallback"
+    chosen["retries_used"] = max_retries
+    chosen["attempts_evaluated"] = attempts
+    return chosen
 
 # Fix for 2 teams
 #def balance_teams(players):
@@ -129,118 +259,72 @@ def evaluate_team(team):
 #    return teams_list[best_index]
 
 # new team balance
+def _lowest_score_team_index(team_scores):
+    """Return a random index among teams with the current lowest score."""
+    min_score = min(team_scores)
+    candidates = [idx for idx, score in enumerate(team_scores) if score == min_score]
+    return random.choice(candidates)
+
+
+def _assign_players_in_rounds(teams, players, team_scores, team_count):
+    """Assign players in top-tier rounds; leftover players go to lowest-score teams."""
+    ordered_players = list(players)
+    random.shuffle(ordered_players)
+    ordered_players.sort(key=lambda p: p[TIER_KEY], reverse=True)
+
+    for start in range(0, len(ordered_players), team_count):
+        batch = ordered_players[start:start + team_count]
+        if len(batch) == team_count:
+            random.shuffle(batch)
+            for team_idx, player in enumerate(batch):
+                teams[team_idx].append(player)
+                team_scores[team_idx] += player[TIER_KEY]
+            continue
+
+        for player in batch:
+            team_idx = _lowest_score_team_index(team_scores)
+            teams[team_idx].append(player)
+            team_scores[team_idx] += player[TIER_KEY]
+
+
 def balance_teams(players, team_count=2):
-    if len(players) < team_count * 7:
-        raise ValueError(f"Need at least {team_count * 7} players to form {team_count} teams of 7.")
-
-    random.shuffle(players)
-
-    # Chia GK
-    if REQUIRE_GK_PER_TEAM:
-        gks = [p for p in players if GK_LABEL in p[POSITION_KEY]]
-        if len(gks) < team_count:
-            raise ValueError(f"Not enough {GK_LABEL}s to form {team_count} teams.")
-        gks.sort(key=lambda p: p[TIER_KEY], reverse=True)
-        selected_gks = gks[:team_count]
-    else:
-        selected_gks = [None] * team_count
-
-    # Loại GK khỏi player pool
-    remaining_players = [p for p in players if p not in selected_gks]
-
-    low_tier_players = []
-    high_tier_players = []
-    balanced_players = []
-
-    for player in remaining_players:
-        tier_value = player[TIER_KEY]
-        if tier_value <= TIER_THRESHOLD_LOW:
-            player[STRENGTH_KEY] = "weak"
-            low_tier_players.append(player)
-        elif tier_value >= TIER_THRESHOLD_HIGH:
-            player[STRENGTH_KEY] = "strong"
-            high_tier_players.append(player)
-        else:
-            player[STRENGTH_KEY] = "balanced"
-            balanced_players.append(player)
-
-    # Chia đều low tier trước
+    position_order = [GK_LABEL, "DF", "MF", "ST"]
     teams = [[] for _ in range(team_count)]
-    for idx, player in enumerate(low_tier_players):
-        teams[idx % team_count].append(player)
+    team_scores = [0.0] * team_count
+    players_by_position = {position: [] for position in position_order}
 
-    # Chia đều high tier để mỗi đội có người gánh
-    for idx, player in enumerate(high_tier_players):
-        teams[idx % team_count].append(player)
+    for player in players:
+        position = normalize_position(player.get(POSITION_KEY, ""))
+        player[POSITION_KEY] = position
+        if position not in players_by_position:
+            raise ValueError(f"Unsupported position '{position}' for {player[NAME_KEY]}.")
+        players_by_position[position].append(player)
+        player[STRENGTH_KEY] = classify_strength_from_tier(player[TIER_KEY])
 
-    # Số lượng còn lại cần chia
-    players_per_team = len(players) // team_count
-    gk_per_team = 1 if REQUIRE_GK_PER_TEAM else 0
-    others_per_team = players_per_team - len(teams[0]) - gk_per_team
+    gk_players = players_by_position[GK_LABEL]
+    minimum_required_gk = 2
+    if REQUIRE_GK_PER_TEAM and len(gk_players) < minimum_required_gk:
+        raise ValueError(f"Not enough {GK_LABEL}s. At least {minimum_required_gk} are required.")
 
-    if others_per_team < 0:
-        raise ValueError("Tổng số người yếu/khỏe vượt quá giới hạn mỗi đội. Điều chỉnh lại ngưỡng.")
+    mandatory_gks = list(gk_players[:team_count])
+    if mandatory_gks:
+        _assign_players_in_rounds(teams, mandatory_gks, team_scores, team_count)
 
-    best_balance = float('inf')
-    best_team_combo = None
+    extra_gks = gk_players[team_count:]
 
-    combinations_needed = others_per_team * (team_count - 1)
+    for position in ["DF", "MF", "ST"]:
+        position_players = players_by_position[position]
+        if not position_players:
+            continue
 
-    if combinations_needed <= 0:
-        candidate_pools = [list(team) for team in teams]
-        for i in range(team_count):
-            if selected_gks[i]:
-                candidate_pools[i].append(selected_gks[i])
-        return candidate_pools
+        _assign_players_in_rounds(teams, position_players, team_scores, team_count)
 
-    if len(balanced_players) < combinations_needed:
-        # Không đủ người cân bằng để brute-force, chia đều phần còn lại
-        remaining_pool = list(balanced_players)
-        temp_teams = [list(team) for team in teams]
+    if extra_gks:
+        _assign_players_in_rounds(teams, extra_gks, team_scores, team_count)
 
-        for i in range(team_count):
-            needed = players_per_team - gk_per_team - len(temp_teams[i])
-            temp_teams[i].extend(remaining_pool[:needed])
-            remaining_pool = remaining_pool[needed:]
+    return teams
 
-        for i in range(team_count):
-            if selected_gks[i]:
-                temp_teams[i].append(selected_gks[i])
-
-        scores = [evaluate_team(team) for team in temp_teams]
-        best_team_combo = temp_teams
-        best_balance = max(scores) - min(scores)
-    else:
-        for combo in itertools.combinations(range(len(balanced_players)), combinations_needed):
-            temp_teams = [list(team) for team in teams]
-            used = set(combo)
-            indices = list(combo) + [i for i in range(len(balanced_players)) if i not in used]
-
-            for i in range(team_count - 1):
-                start = i * others_per_team
-                end = (i + 1) * others_per_team
-                temp_teams[i].extend([balanced_players[indices[j]] for j in range(start, end)])
-
-            temp_teams[-1].extend([balanced_players[indices[j]] for j in range((team_count - 1) * others_per_team, len(indices))])
-
-            # Add GK
-            for i in range(team_count):
-                if selected_gks[i]:
-                    temp_teams[i].append(selected_gks[i])
-
-            scores = [evaluate_team(team) for team in temp_teams]
-            balance = max(scores) - min(scores)
-
-            if balance < best_balance:
-                best_balance = balance
-                best_team_combo = temp_teams
-
-    if not best_team_combo:
-        raise RuntimeError("Unable to balance teams.")
-
-    return best_team_combo
-
-def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
+def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2, return_details=False):
     all_players = read_players_from_csv(filename)
     if selected_players is not None:
         selected_names = [p[NAME_KEY] for p in selected_players]
@@ -248,7 +332,9 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
     else:
         players = all_players
 
-    teams = balance_teams(players, team_count=team_count)
+    selection = generate_balanced_teams(players, team_count=team_count)
+    teams = selection["teams"]
+    fairness = selection["fairness"]
 
     result = []
     team_scores = []
@@ -256,19 +342,68 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
     for idx, team in enumerate(teams, start=1):
         result.append(f"\nTeam {idx}:")
         for i, player in enumerate(team, start=1):
-            gk_flag = " (GK)" if GK_LABEL in player[POSITION_KEY] else ""
-            strength = player.get(STRENGTH_KEY, classify_strength_from_tier(player[TIER_KEY]))
+            position = player.get(POSITION_KEY, "")
             result.append(
-                f"{i}. {player[NAME_KEY]} (Tier: {player[TIER_KEY]}, Strength: {strength}){gk_flag}"
+                f"{i}. {player[NAME_KEY]} (Tier: {player[TIER_KEY]}, Position: {position})"
             )
         score = evaluate_team(team)
+        team_median = median([player[TIER_KEY] for player in team])
         team_scores.append(score)
         result.append(f"Team {idx} Score: {score} (Players: {len(team)})")
+        result.append(f"Team {idx} Median Point: {team_median}")
 
     balance_diff = max(team_scores) - min(team_scores)
     result.append(f"\nBalance Difference: {balance_diff}")
 
-    return "\n".join(result)
+    fairness_output = ["", "Fairness Checks:"]
+    fairness_output.append(
+        f"Selected via: {selection['selection']} | Attempt: {selection['attempt_index']} | Retries used: {selection['retries_used']}"
+    )
+
+    if team_count == 2:
+        for line in ["DF", "MF", "ST"]:
+            fairness_output.append(
+                (
+                    f"{line} median T1/T2: {fairness['medians']['team1'][line]} / {fairness['medians']['team2'][line]} "
+                    f"(Δ {fairness['median_delta'][line]}, threshold {DEFAULT_MEDIAN_DELTA[line]})"
+                )
+            )
+            fairness_output.append(
+                (
+                    f"{line} IQR T1/T2: {fairness['iqr']['team1'][line]} / {fairness['iqr']['team2'][line]} "
+                    f"(Δ {fairness['iqr_delta'][line]}, threshold {DEFAULT_IQR_DELTA[line]})"
+                )
+            )
+    else:
+        fairness_output.append("Two-team line fairness checks are skipped when team_count > 2.")
+
+    print("\n".join(fairness_output))
+
+    text_result = "\n".join(result)
+    if return_details:
+        return {
+            "text": text_result,
+            "teams": teams,
+            "medians": fairness["medians"],
+            "iqr": fairness["iqr"],
+            "median_delta": fairness["median_delta"],
+            "iqr_delta": fairness["iqr_delta"],
+            "selection": selection["selection"],
+            "attempt_index": selection["attempt_index"],
+            "retries_used": selection["retries_used"],
+        }
+
+    return text_result
+
+
+def self_test_statistics():
+    """Simple self-check for median and IQR helpers."""
+    sample = [1.0, 2.0, 3.0, 4.0, 10.0]
+    return {
+        "sample": sample,
+        "median": median(sample),
+        "iqr": iqr(sample),
+    }
 
 
 #def run_team_assignment(filename=CSV_FILE, selected_players=None):
@@ -306,16 +441,18 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
 #    return "\n".join(result)
 
 #insert new players
-def add_new_player_to_csv(name, tier, positions, filename=CSV_FILE):
-    if isinstance(positions, str):
-        positions = [positions]
-    elif not isinstance(positions, list):
-        raise ValueError("Positions must be a list or a string.")
+def add_new_player_to_csv(name, tier, position, filename=CSV_FILE):
+    if not isinstance(position, str):
+        raise ValueError("Position must be a single string value: GK, DF, MF, or ST.")
+
+    position = normalize_position(position)
+    if position not in {GK_LABEL, "DF", "MF", "ST"}:
+        raise ValueError("Position must be one of: GK, DF, MF, ST.")
 
     new_player = {
         NAME_KEY: name,
         TIER_KEY: float(tier),
-        POSITION_KEY: positions,
+        POSITION_KEY: position,
         STRENGTH_KEY: classify_strength_from_tier(tier)
     }
 
@@ -488,4 +625,4 @@ def show_attendance_gui(parent=None):
 # Run it like this:
 # run_team_assignment()
 # show_attendance_gui()
-# add_new_player_to_csv("Leo", 2.7, ["GK", "DEF"])
+# add_new_player_to_csv("Leo", 2.7, "GK")

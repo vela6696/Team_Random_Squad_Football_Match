@@ -1,5 +1,4 @@
 import sys
-from typing import List
 
 import pandas as pd
 from PyQt5.QtCore import Qt
@@ -9,8 +8,6 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QListWidget,
-    QListWidgetItem,
     QMainWindow,
     QPushButton,
     QSlider,
@@ -137,12 +134,10 @@ class RandomSquadWindow(QMainWindow):
         tier_layout.addWidget(self.new_tier)
         layout.addLayout(tier_layout)
 
-        layout.addWidget(QLabel("Vị trí (chọn nhiều):"))
-        self.pos_list = QListWidget()
-        self.pos_list.setSelectionMode(QListWidget.MultiSelection)
-        for pos in ["GK", "MF"]:
-            QListWidgetItem(pos, self.pos_list)
-        layout.addWidget(self.pos_list)
+        layout.addWidget(QLabel("Vị trí:"))
+        self.pos_combo = QComboBox()
+        self.pos_combo.addItems(["GK", "DF", "MF", "ST"])
+        layout.addWidget(self.pos_combo)
 
         self.add_button = QPushButton("Thêm cầu thủ")
         self.add_button.clicked.connect(self.handle_add)
@@ -221,9 +216,6 @@ class RandomSquadWindow(QMainWindow):
         dlg = team_select_pyqt.TeamSelectionWindow(self)
         dlg.exec_()
 
-    def get_selected_positions(self) -> List[str]:
-        return [item.text() for item in self.pos_list.selectedItems()]
-
     def handle_add(self) -> None:
         name = self.new_name.text().strip()
         try:
@@ -232,8 +224,8 @@ class RandomSquadWindow(QMainWindow):
             self.result_label.setText("Lỗi: Tier phải là số!")
             return
 
-        positions = self.get_selected_positions()
-        if not name or not positions:
+        position = self.pos_combo.currentText().strip()
+        if not name or not position:
             self.result_label.setText("Tên và vị trí không được để trống.")
             return
 
@@ -241,7 +233,7 @@ class RandomSquadWindow(QMainWindow):
             self.result_label.setText(f"{name} đã tồn tại!")
             return
 
-        team_utils.add_new_player_to_csv(name, tier, positions, filename=str(CSV_PATH))
+        team_utils.add_new_player_to_csv(name, tier, position, filename=str(CSV_PATH))
         self.result_label.setText(f"Đã thêm {name} ({tier})")
         self.load_data()
 
