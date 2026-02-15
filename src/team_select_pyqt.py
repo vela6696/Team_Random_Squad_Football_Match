@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QHeaderView,
+    QLineEdit,
 )
 import team_utils as lib
 
@@ -80,6 +81,23 @@ class TeamSelectionWindow(QDialog):
         self._load_players()
         layout.addWidget(self.player_table)
 
+        summary_row = QHBoxLayout()
+        summary_row.addWidget(QLabel("Đã tick:"))
+        self.selected_count_box = QLineEdit()
+        self.selected_count_box.setReadOnly(True)
+        summary_row.addWidget(self.selected_count_box)
+        summary_row.addStretch(1)
+        summary_row.addWidget(QLabel("Cần tối thiểu:"))
+        self.required_count_box = QLineEdit()
+        self.required_count_box.setReadOnly(True)
+        summary_row.addWidget(self.required_count_box)
+        layout.addLayout(summary_row)
+
+        self.player_table.itemChanged.connect(self._handle_item_changed)
+        self.team_spin.valueChanged.connect(self._update_selection_summary)
+        self.players_spin.valueChanged.connect(self._update_selection_summary)
+        self._update_selection_summary()
+
         self.shuffle_button = QPushButton("Chia đội!!!")
         self.shuffle_button.clicked.connect(self.handle_shuffle)
         layout.addWidget(self.shuffle_button)
@@ -114,6 +132,25 @@ class TeamSelectionWindow(QDialog):
             )
             self.player_table.setItem(row, self.STRENGTH_COL, self._make_readonly_item(str(strength)))
 
+    def _count_selected_players(self) -> int:
+        count = 0
+        for row in range(self.player_table.rowCount()):
+            check_item = self.player_table.item(row, self.SELECT_COL)
+            if check_item and check_item.checkState() == Qt.Checked:
+                count += 1
+        return count
+
+    def _update_selection_summary(self) -> None:
+        selected_count = self._count_selected_players()
+        required_count = self.team_spin.value() * self.players_spin.value()
+        self.selected_count_box.setText(str(selected_count))
+        self.required_count_box.setText(str(required_count))
+
+    def _handle_item_changed(self, item: QTableWidgetItem) -> None:
+        if item.column() == self.SELECT_COL:
+            self._update_selection_summary()
+
+
     def handle_shuffle(self):
         team_count = self.team_spin.value()
         players_per_team = self.players_spin.value()
@@ -147,6 +184,8 @@ class TeamSelectionWindow(QDialog):
 
             if check_item.checkState() == Qt.Checked:
                 selected_players.append(player)
+
+        self._update_selection_summary()
 
         if len(selected_players) < team_count * players_per_team:
             QMessageBox.warning(

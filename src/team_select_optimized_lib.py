@@ -352,23 +352,24 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2, 
     balance_diff = max(team_scores) - min(team_scores)
     result.append(f"\nBalance Difference: {balance_diff}")
 
-    result.append("\nFairness Checks:")
-    result.append(
+    fairness_output = ["", "Fairness Checks:"]
+    fairness_output.append(
         f"Selected via: {selection['selection']} | Attempt: {selection['attempt_index']} | Retries used: {selection['retries_used']}"
     )
     for line in ["DF", "MF", "ST"]:
-        result.append(
+        fairness_output.append(
             (
                 f"{line} median T1/T2: {fairness['medians']['team1'][line]} / {fairness['medians']['team2'][line]} "
                 f"(Δ {fairness['median_delta'][line]}, threshold {DEFAULT_MEDIAN_DELTA[line]})"
             )
         )
-        result.append(
+        fairness_output.append(
             (
                 f"{line} IQR T1/T2: {fairness['iqr']['team1'][line]} / {fairness['iqr']['team2'][line]} "
                 f"(Δ {fairness['iqr_delta'][line]}, threshold {DEFAULT_IQR_DELTA[line]})"
             )
         )
+    print("\n".join(fairness_output))
 
     text_result = "\n".join(result)
     if return_details:
