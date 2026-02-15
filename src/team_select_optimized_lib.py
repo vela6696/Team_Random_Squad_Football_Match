@@ -218,10 +218,9 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
     for idx, team in enumerate(teams, start=1):
         result.append(f"\nTeam {idx}:")
         for i, player in enumerate(team, start=1):
-            gk_flag = " (GK)" if player[POSITION_KEY] == GK_LABEL else ""
-            strength = player.get(STRENGTH_KEY, classify_strength_from_tier(player[TIER_KEY]))
+            position = player.get(POSITION_KEY, "")
             result.append(
-                f"{i}. {player[NAME_KEY]} (Tier: {player[TIER_KEY]}, Strength: {strength}){gk_flag}"
+                f"{i}. {player[NAME_KEY]} (Tier: {player[TIER_KEY]}, Position: {position})"
             )
         score = evaluate_team(team)
         team_scores.append(score)
