@@ -138,24 +138,38 @@ def evaluate_team(team):
 #    return teams_list[best_index]
 
 # new team balance
-def _assign_players_in_rounds(teams, players, team_count):
-    """Assign players by batches of top-N (N = team_count) with random team mapping."""
-    random.shuffle(players)
-    players.sort(key=lambda p: p[TIER_KEY], reverse=True)
+def _lowest_score_team_index(team_scores):
+    """Return a random index among teams with the current lowest score."""
+    min_score = min(team_scores)
+    candidates = [idx for idx, score in enumerate(team_scores) if score == min_score]
+    return random.choice(candidates)
 
-    for start in range(0, len(players), team_count):
-        batch = players[start:start + team_count]
-        random.shuffle(batch)
-        for team_idx, player in enumerate(batch):
+
+def _assign_players_in_rounds(teams, players, team_scores, team_count):
+    """Assign players in top-tier rounds; leftover players go to lowest-score teams."""
+    ordered_players = list(players)
+    random.shuffle(ordered_players)
+    ordered_players.sort(key=lambda p: p[TIER_KEY], reverse=True)
+
+    for start in range(0, len(ordered_players), team_count):
+        batch = ordered_players[start:start + team_count]
+        if len(batch) == team_count:
+            random.shuffle(batch)
+            for team_idx, player in enumerate(batch):
+                teams[team_idx].append(player)
+                team_scores[team_idx] += player[TIER_KEY]
+            continue
+
+        for player in batch:
+            team_idx = _lowest_score_team_index(team_scores)
             teams[team_idx].append(player)
+            team_scores[team_idx] += player[TIER_KEY]
 
 
 def balance_teams(players, team_count=2):
-    if len(players) % team_count != 0:
-        raise ValueError("The selected player count must be divisible by the number of teams.")
-
     position_order = [GK_LABEL, "DF", "MF", "ST"]
     teams = [[] for _ in range(team_count)]
+    team_scores = [0.0] * team_count
     players_by_position = {position: [] for position in position_order}
 
     for player in players:
@@ -171,7 +185,8 @@ def balance_teams(players, team_count=2):
         raise ValueError(f"Not enough {GK_LABEL}s to form {team_count} teams.")
 
     mandatory_gks = list(gk_players[:team_count])
-    _assign_players_in_rounds(teams, mandatory_gks, team_count)
+    if mandatory_gks:
+        _assign_players_in_rounds(teams, mandatory_gks, team_scores, team_count)
 
     extra_gks = gk_players[team_count:]
 
@@ -180,15 +195,10 @@ def balance_teams(players, team_count=2):
         if not position_players:
             continue
 
-        if len(position_players) % team_count != 0:
-            raise ValueError(
-                f"Position {position} has {len(position_players)} players, which cannot be evenly split across {team_count} teams."
-            )
-
-        _assign_players_in_rounds(teams, position_players, team_count)
+        _assign_players_in_rounds(teams, position_players, team_scores, team_count)
 
     if extra_gks:
-        _assign_players_in_rounds(teams, extra_gks, team_count)
+        _assign_players_in_rounds(teams, extra_gks, team_scores, team_count)
 
     return teams
 
