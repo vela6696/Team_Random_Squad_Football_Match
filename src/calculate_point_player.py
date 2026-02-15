@@ -3,6 +3,16 @@ from tkinter import ttk
 import pandas as pd
 import team_select_optimized_lib
 
+
+def ensure_strength_column(dataframe: pd.DataFrame) -> pd.DataFrame:
+    """Ensure the strength column exists and is up to date."""
+    strength_key = team_select_optimized_lib.STRENGTH_KEY
+    if 'tier' in dataframe.columns:
+        dataframe[strength_key] = dataframe['tier'].apply(
+            team_select_optimized_lib.classify_strength_from_tier
+        )
+    return dataframe
+
 # === Config ===
 CSV_FILE = "players.csv"  # CSV file path
 SKILL_LEVELS = ["1 sao", "2 sao", "3 sao", "4 sao", "5 sao","6 sao", "7 sao", "8 sao", "9 sao", "10 sao", "siêu sao" ]
@@ -44,7 +54,7 @@ STAMINA_MAPPING = {
 # =================
 
 # Load CSV file into a DataFrame
-df = pd.read_csv(CSV_FILE)
+df = ensure_strength_column(pd.read_csv(CSV_FILE))
 
 def get_score_level(level: str) -> float:
     if level in SKILL_MAPPING:
@@ -103,6 +113,11 @@ def on_calculate():
         df.loc[df['name'] == name, 'tier'] = score
         df.loc[df['name'] == name, 'skill'] = skill
         df.loc[df['name'] == name, 'stamina'] = stamina
+        df.loc[df['name'] == name, team_select_optimized_lib.STRENGTH_KEY] = (
+            df.loc[df['name'] == name, 'tier'].apply(
+                team_select_optimized_lib.classify_strength_from_tier
+            )
+        )
         df.to_csv(CSV_FILE, index=False, encoding='utf-8-sig')
 
     result_label.config(text=f"{name} (Tier: {score})")
@@ -121,7 +136,7 @@ name_combo.bind("<<ComboboxSelected>>", update_player_fields)
 
 def reload_player_names():
     global df
-    df = pd.read_csv(CSV_FILE)
+    df = ensure_strength_column(pd.read_csv(CSV_FILE))
     name_combo['values'] = df['name'].tolist()
     if df['name'].tolist():
         name_combo.current(0)
@@ -197,7 +212,7 @@ def on_add_new_player():
     result_label.config(text=f"Đã thêm {name} ({tier})")
 
     # Update combobox
-    name_combo['values'] = pd.read_csv(CSV_FILE)['name'].tolist()
+    reload_player_names()
 
 tk.Button(root, text="Thêm cầu thủ", command=on_add_new_player).pack(pady=5)
 
