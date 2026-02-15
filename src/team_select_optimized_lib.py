@@ -16,6 +16,7 @@ import random
 import pandas as pd
 import tkinter as tk
 from tkinter import messagebox
+from fairness_config import DEFAULT_MEDIAN_DELTA, DEFAULT_IQR_DELTA, MAX_RETRIES
 
 
 def classify_strength_from_tier(tier_value):
@@ -87,6 +88,126 @@ def normalize_position(position_value):
 
 def evaluate_team(team):
     return sum(player[TIER_KEY] for player in team)
+
+
+def median(values):
+    """Compute median for odd and even value counts."""
+    if not values:
+        return 0.0
+
+    ordered = sorted(float(value) for value in values)
+    mid = len(ordered) // 2
+
+    if len(ordered) % 2 == 1:
+        return ordered[mid]
+    return (ordered[mid - 1] + ordered[mid]) / 2
+
+
+def iqr(values):
+    """Compute Tukey IQR (median of halves)."""
+    if not values:
+        return 0.0
+
+    ordered = sorted(float(value) for value in values)
+    n = len(ordered)
+    mid = n // 2
+
+    if n % 2 == 1:
+        lower = ordered[:mid]
+        upper = ordered[mid + 1:]
+    else:
+        lower = ordered[:mid]
+        upper = ordered[mid:]
+
+    if not lower or not upper:
+        return 0.0
+
+    q1 = median(lower)
+    q3 = median(upper)
+    return q3 - q1
+
+
+def _line_tiers(team):
+    lines = {"DF": [], "MF": [], "ST": []}
+    for player in team:
+        line = normalize_position(player.get(POSITION_KEY, ""))
+        if line in lines:
+            lines[line].append(float(player[TIER_KEY]))
+    return lines
+
+
+def _evaluate_fairness(teams):
+    if len(teams) != 2:
+        return {
+            "accepted": True,
+            "medians": {},
+            "iqr": {},
+            "median_delta": {},
+            "iqr_delta": {},
+            "violation_score": 0.0,
+        }
+
+    team_line_tiers = [_line_tiers(teams[0]), _line_tiers(teams[1])]
+    medians = {"team1": {}, "team2": {}}
+    iqrs = {"team1": {}, "team2": {}}
+    median_delta = {}
+    iqr_delta = {}
+    violation_score = 0.0
+    accepted = True
+
+    for line in ["DF", "MF", "ST"]:
+        t1_values = team_line_tiers[0][line]
+        t2_values = team_line_tiers[1][line]
+
+        medians["team1"][line] = median(t1_values)
+        medians["team2"][line] = median(t2_values)
+        iqrs["team1"][line] = iqr(t1_values)
+        iqrs["team2"][line] = iqr(t2_values)
+
+        median_delta[line] = abs(medians["team1"][line] - medians["team2"][line])
+        iqr_delta[line] = abs(iqrs["team1"][line] - iqrs["team2"][line])
+
+        epsilon = 1e-9
+        median_over = max(0.0, median_delta[line] - DEFAULT_MEDIAN_DELTA[line] - epsilon)
+        iqr_over = max(0.0, iqr_delta[line] - DEFAULT_IQR_DELTA[line] - epsilon)
+        violation_score += median_over + iqr_over
+
+        if median_delta[line] - DEFAULT_MEDIAN_DELTA[line] > epsilon or iqr_delta[line] - DEFAULT_IQR_DELTA[line] > epsilon:
+            accepted = False
+
+    return {
+        "accepted": accepted,
+        "medians": medians,
+        "iqr": iqrs,
+        "median_delta": median_delta,
+        "iqr_delta": iqr_delta,
+        "violation_score": violation_score,
+    }
+
+
+def generate_balanced_teams(players, team_count=2, max_retries=MAX_RETRIES):
+    attempts = []
+
+    for attempt_idx in range(1, max_retries + 1):
+        candidate_teams = balance_teams(players, team_count=team_count)
+        fairness = _evaluate_fairness(candidate_teams)
+        attempt_payload = {
+            "teams": candidate_teams,
+            "fairness": fairness,
+            "attempt_index": attempt_idx,
+        }
+        attempts.append(attempt_payload)
+        if fairness["accepted"]:
+            attempt_payload["selection"] = "accepted"
+            attempt_payload["retries_used"] = attempt_idx - 1
+            attempt_payload["attempts_evaluated"] = attempts
+            return attempt_payload
+
+    chosen = min(attempts, key=lambda attempt: attempt["fairness"]["violation_score"])
+    chosen["selection"] = "fallback"
+    chosen["retries_used"] = max_retries
+    chosen["attempts_evaluated"] = attempts
+    return chosen
 
 # Fix for 2 teams
 #def balance_teams(players):
@@ -181,8 +302,9 @@ def balance_teams(players, team_count=2):
         player[STRENGTH_KEY] = classify_strength_from_tier(player[TIER_KEY])
 
     gk_players = players_by_position[GK_LABEL]
-    if REQUIRE_GK_PER_TEAM and len(gk_players) < team_count:
-        raise ValueError(f"Not enough {GK_LABEL}s to form {team_count} teams.")
+    minimum_required_gk = 2
+    if REQUIRE_GK_PER_TEAM and len(gk_players) < minimum_required_gk:
+        raise ValueError(f"Not enough {GK_LABEL}s. At least {minimum_required_gk} are required.")
 
     mandatory_gks = list(gk_players[:team_count])
     if mandatory_gks:
@@ -202,7 +324,7 @@ def balance_teams(players, team_count=2):
 
     return teams
 
-def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
+def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2, return_details=False):
     all_players = read_players_from_csv(filename)
     if selected_players is not None:
         selected_names = [p[NAME_KEY] for p in selected_players]
@@ -210,7 +332,9 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
     else:
         players = all_players
 
-    teams = balance_teams(players, team_count=team_count)
+    selection = generate_balanced_teams(players, team_count=team_count)
+    teams = selection["teams"]
+    fairness = selection["fairness"]
 
     result = []
     team_scores = []
@@ -223,13 +347,63 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
                 f"{i}. {player[NAME_KEY]} (Tier: {player[TIER_KEY]}, Position: {position})"
             )
         score = evaluate_team(team)
+        team_median = median([player[TIER_KEY] for player in team])
         team_scores.append(score)
         result.append(f"Team {idx} Score: {score} (Players: {len(team)})")
+        result.append(f"Team {idx} Median Point: {team_median}")
 
     balance_diff = max(team_scores) - min(team_scores)
     result.append(f"\nBalance Difference: {balance_diff}")
 
-    return "\n".join(result)
+    fairness_output = ["", "Fairness Checks:"]
+    fairness_output.append(
+        f"Selected via: {selection['selection']} | Attempt: {selection['attempt_index']} | Retries used: {selection['retries_used']}"
+    )
+
+    if team_count == 2:
+        for line in ["DF", "MF", "ST"]:
+            fairness_output.append(
+                (
+                    f"{line} median T1/T2: {fairness['medians']['team1'][line]} / {fairness['medians']['team2'][line]} "
+                    f"(Δ {fairness['median_delta'][line]}, threshold {DEFAULT_MEDIAN_DELTA[line]})"
+                )
+            )
+            fairness_output.append(
+                (
+                    f"{line} IQR T1/T2: {fairness['iqr']['team1'][line]} / {fairness['iqr']['team2'][line]} "
+                    f"(Δ {fairness['iqr_delta'][line]}, threshold {DEFAULT_IQR_DELTA[line]})"
+                )
+            )
+    else:
+        fairness_output.append("Two-team line fairness checks are skipped when team_count > 2.")
+
+    print("\n".join(fairness_output))
+
+    text_result = "\n".join(result)
+    if return_details:
+        return {
+            "text": text_result,
+            "teams": teams,
+            "medians": fairness["medians"],
+            "iqr": fairness["iqr"],
+            "median_delta": fairness["median_delta"],
+            "iqr_delta": fairness["iqr_delta"],
+            "selection": selection["selection"],
+            "attempt_index": selection["attempt_index"],
+            "retries_used": selection["retries_used"],
+        }
+
+    return text_result
+
+
+def self_test_statistics():
+    """Simple self-check for median and IQR helpers."""
+    sample = [1.0, 2.0, 3.0, 4.0, 10.0]
+    return {
+        "sample": sample,
+        "median": median(sample),
+        "iqr": iqr(sample),
+    }
 
 
 #def run_team_assignment(filename=CSV_FILE, selected_players=None):
