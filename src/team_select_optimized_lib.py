@@ -12,9 +12,7 @@ GK_LABEL = "GK"
 DEFAULT_ENCODING = "utf-8"
 
 # === Core Logic ===
-import itertools
 import random
-import heapq
 import pandas as pd
 import tkinter as tk
 from tkinter import messagebox
@@ -71,10 +69,21 @@ def read_players_from_csv(filename):
     df = pd.read_csv(filename, encoding=DEFAULT_ENCODING)
     if TIER_KEY in df.columns:
         df[STRENGTH_KEY] = df[TIER_KEY].apply(classify_strength_from_tier)
-    df[POSITION_KEY] = df[POSITION_KEY].apply(
-        lambda x: x.strip("[]").replace("'", "").split(', ') if isinstance(x, str) else []
-    )
+    df[POSITION_KEY] = df[POSITION_KEY].apply(normalize_position)
     return df.to_dict(orient='records')
+
+
+def normalize_position(position_value):
+    """Normalize position values to a single label: GK/DF/MF/ST."""
+    if not isinstance(position_value, str):
+        return ""
+
+    cleaned = position_value.strip()
+    if cleaned.startswith("[") and cleaned.endswith("]"):
+        parts = cleaned.strip("[]").replace("'", "").split(',')
+        cleaned = parts[0].strip() if parts else ""
+
+    return cleaned.upper()
 
 def evaluate_team(team):
     return sum(player[TIER_KEY] for player in team)
@@ -130,115 +139,45 @@ def evaluate_team(team):
 
 # new team balance
 def balance_teams(players, team_count=2):
-    if len(players) < team_count * 7:
-        raise ValueError(f"Need at least {team_count * 7} players to form {team_count} teams of 7.")
+    if len(players) % team_count != 0:
+        raise ValueError("The selected player count must be divisible by the number of teams.")
 
-    random.shuffle(players)
-
-    # Chia GK
-    if REQUIRE_GK_PER_TEAM:
-        gks = [p for p in players if GK_LABEL in p[POSITION_KEY]]
-        if len(gks) < team_count:
-            raise ValueError(f"Not enough {GK_LABEL}s to form {team_count} teams.")
-        gks.sort(key=lambda p: p[TIER_KEY], reverse=True)
-        selected_gks = gks[:team_count]
-    else:
-        selected_gks = [None] * team_count
-
-    # Loại GK khỏi player pool
-    remaining_players = [p for p in players if p not in selected_gks]
-
-    low_tier_players = []
-    high_tier_players = []
-    balanced_players = []
-
-    for player in remaining_players:
-        tier_value = player[TIER_KEY]
-        if tier_value <= TIER_THRESHOLD_LOW:
-            player[STRENGTH_KEY] = "weak"
-            low_tier_players.append(player)
-        elif tier_value >= TIER_THRESHOLD_HIGH:
-            player[STRENGTH_KEY] = "strong"
-            high_tier_players.append(player)
-        else:
-            player[STRENGTH_KEY] = "balanced"
-            balanced_players.append(player)
-
-    # Chia đều low tier trước
+    position_order = [GK_LABEL, "DF", "MF", "ST"]
     teams = [[] for _ in range(team_count)]
-    for idx, player in enumerate(low_tier_players):
-        teams[idx % team_count].append(player)
+    players_by_position = {position: [] for position in position_order}
 
-    # Chia đều high tier để mỗi đội có người gánh
-    for idx, player in enumerate(high_tier_players):
-        teams[idx % team_count].append(player)
+    for player in players:
+        position = normalize_position(player.get(POSITION_KEY, ""))
+        player[POSITION_KEY] = position
+        if position not in players_by_position:
+            raise ValueError(f"Unsupported position '{position}' for {player[NAME_KEY]}.")
+        players_by_position[position].append(player)
 
-    # Số lượng còn lại cần chia
-    players_per_team = len(players) // team_count
-    gk_per_team = 1 if REQUIRE_GK_PER_TEAM else 0
-    others_per_team = players_per_team - len(teams[0]) - gk_per_team
+        player[STRENGTH_KEY] = classify_strength_from_tier(player[TIER_KEY])
 
-    if others_per_team < 0:
-        raise ValueError("Tổng số người yếu/khỏe vượt quá giới hạn mỗi đội. Điều chỉnh lại ngưỡng.")
+    if REQUIRE_GK_PER_TEAM and len(players_by_position[GK_LABEL]) < team_count:
+        raise ValueError(f"Not enough {GK_LABEL}s to form {team_count} teams.")
 
-    best_balance = float('inf')
-    best_team_combo = None
+    for position in position_order:
+        position_players = players_by_position[position]
+        if not position_players:
+            continue
 
-    combinations_needed = others_per_team * (team_count - 1)
+        if len(position_players) % team_count != 0:
+            raise ValueError(
+                f"Position {position} has {len(position_players)} players, which cannot be evenly split across {team_count} teams."
+            )
 
-    if combinations_needed <= 0:
-        candidate_pools = [list(team) for team in teams]
-        for i in range(team_count):
-            if selected_gks[i]:
-                candidate_pools[i].append(selected_gks[i])
-        return candidate_pools
+        random.shuffle(position_players)
+        position_players.sort(key=lambda p: p[TIER_KEY], reverse=True)
 
-    if len(balanced_players) < combinations_needed:
-        # Không đủ người cân bằng để brute-force, chia đều phần còn lại
-        remaining_pool = list(balanced_players)
-        temp_teams = [list(team) for team in teams]
+        for start in range(0, len(position_players), team_count):
+            batch = position_players[start:start + team_count]
+            random.shuffle(batch)
+            for team_idx, player in enumerate(batch):
+                teams[team_idx].append(player)
 
-        for i in range(team_count):
-            needed = players_per_team - gk_per_team - len(temp_teams[i])
-            temp_teams[i].extend(remaining_pool[:needed])
-            remaining_pool = remaining_pool[needed:]
-
-        for i in range(team_count):
-            if selected_gks[i]:
-                temp_teams[i].append(selected_gks[i])
-
-        scores = [evaluate_team(team) for team in temp_teams]
-        best_team_combo = temp_teams
-        best_balance = max(scores) - min(scores)
-    else:
-        for combo in itertools.combinations(range(len(balanced_players)), combinations_needed):
-            temp_teams = [list(team) for team in teams]
-            used = set(combo)
-            indices = list(combo) + [i for i in range(len(balanced_players)) if i not in used]
-
-            for i in range(team_count - 1):
-                start = i * others_per_team
-                end = (i + 1) * others_per_team
-                temp_teams[i].extend([balanced_players[indices[j]] for j in range(start, end)])
-
-            temp_teams[-1].extend([balanced_players[indices[j]] for j in range((team_count - 1) * others_per_team, len(indices))])
-
-            # Add GK
-            for i in range(team_count):
-                if selected_gks[i]:
-                    temp_teams[i].append(selected_gks[i])
-
-            scores = [evaluate_team(team) for team in temp_teams]
-            balance = max(scores) - min(scores)
-
-            if balance < best_balance:
-                best_balance = balance
-                best_team_combo = temp_teams
-
-    if not best_team_combo:
-        raise RuntimeError("Unable to balance teams.")
-
-    return best_team_combo
+    return teams
 
 def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
     all_players = read_players_from_csv(filename)
@@ -256,7 +195,7 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
     for idx, team in enumerate(teams, start=1):
         result.append(f"\nTeam {idx}:")
         for i, player in enumerate(team, start=1):
-            gk_flag = " (GK)" if GK_LABEL in player[POSITION_KEY] else ""
+            gk_flag = " (GK)" if player[POSITION_KEY] == GK_LABEL else ""
             strength = player.get(STRENGTH_KEY, classify_strength_from_tier(player[TIER_KEY]))
             result.append(
                 f"{i}. {player[NAME_KEY]} (Tier: {player[TIER_KEY]}, Strength: {strength}){gk_flag}"
@@ -307,15 +246,17 @@ def run_team_assignment(filename=CSV_FILE, selected_players=None, team_count=2):
 
 #insert new players
 def add_new_player_to_csv(name, tier, positions, filename=CSV_FILE):
-    if isinstance(positions, str):
-        positions = [positions]
-    elif not isinstance(positions, list):
-        raise ValueError("Positions must be a list or a string.")
+    if not isinstance(positions, str):
+        raise ValueError("Position must be a single string value: GK, DF, MF, or ST.")
+
+    position = normalize_position(positions)
+    if position not in {GK_LABEL, "DF", "MF", "ST"}:
+        raise ValueError("Position must be one of: GK, DF, MF, ST.")
 
     new_player = {
         NAME_KEY: name,
         TIER_KEY: float(tier),
-        POSITION_KEY: positions,
+        POSITION_KEY: position,
         STRENGTH_KEY: classify_strength_from_tier(tier)
     }
 
@@ -488,4 +429,4 @@ def show_attendance_gui(parent=None):
 # Run it like this:
 # run_team_assignment()
 # show_attendance_gui()
-# add_new_player_to_csv("Leo", 2.7, ["GK", "DEF"])
+# add_new_player_to_csv("Leo", 2.7, "GK")

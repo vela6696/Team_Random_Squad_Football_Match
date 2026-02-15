@@ -1,46 +1,46 @@
 ﻿name,tier,position,stamina,skill,strength
-Lăng,3.0,['MF'],50.0,6 sao,balanced
-Hiệp,3.7,['MF'],80.0,6 sao,balanced
-Minh,2.9,['MF'],60.0,4 sao,balanced
-Phúc,4.2,['MF'],80.0,9 sao,strong
-Đức,4.1,"['GK', 'MF']",90.0,7 sao,strong
-Hải,4.0,['MF'],80.0,8 sao,strong
-Khanh,3.9,['MF'],80.0,7 sao,strong
-Mạnh,4.1,['MF'],90.0,7 sao,strong
-Khang,2.7,"['GK', 'MF']",50.0,4 sao,weak
-Bảo,3.2,['MF'],70.0,4 sao,balanced
-Châu,3.6,['MF'],60.0,8 sao,balanced
-Văn,3.4,['MF'],60.0,7 sao,balanced
-Long,3.2,['MF'],60.0,6 sao,balanced
-Dự,5.0,['MF'],100.0,siêu sao,strong
-Vũ,3.3,['MF'],70.0,5 sao,balanced
-Hoàng Nam,2.9,['MF'],40.0,7 sao,balanced
-Trung,2.8,['MF'],50.0,5 sao,weak
-Thương,3.8,['MF'],70.0,8 sao,strong
-Vương,4.0,['MF'],60.0,10 sao,strong
-Quang,3.6,"['GK', 'MF']",70.0,7 sao,balanced
-Trí,3.0,"['GK', 'MF']",50,6 sao,balanced
-Thế Minh,2.8,['MF'],40.0,6 sao,weak
-a Hoàng Anh,3.8,['MF'],70.0,8 sao,strong
-Khương Peter,2.6,['MF'],40.0,5 sao,weak
-Hải Anh,3.8,['MF'],70.0,8 sao,strong
-Hoài Nam,2.9,['MF'],40.0,7 sao,balanced
-Phát,3.2,['MF'],50.0,7 sao,balanced
-Phong,3.2,"['GK', 'MF']",50.0,7 sao,balanced
-6 Hoa,3.6,['MF'],60.0,8 sao,balanced
-Hớn Tân,3.8,['MF'],70.0,8 sao,strong
-Vỹ,4.5,['MF'],100.0,8 sao,strong
-Trí trọc,3.8,['MF'],70.0,8 sao,strong
-An,2.8,['MF'],50.0,5 sao,weak
-Đức Lê PCCC,3.6,['MF'],70.0,7 sao,balanced
-Thành,3.3,['MF'],50.0,8 sao,balanced
-Tín,2.7,['MF'],,,weak
-Bạn Lăng,2.9,['MF'],,,balanced
-Học trò Hải,3.2,['GK'],60.0,6 sao,balanced
-Đăng,2.8,['MF'],60.0,4 sao,weak
-Em Hoàng Anh,2.8,['MF'],,,weak
-Yên (bạn a Trí),2.8,['MF'],60.0,4 sao,weak
-Htro Hải (Hoàng),2.5,['MF'],,,weak
-Thiện (bạn Đức),2.0,['MF'],,,weak
-Tân (hs Hải),3.0,['MF'],,,balanced
-Na,4.3,['MF'],,,strong
+Lăng,3.0,MF,50.0,6 sao,balanced
+Hiệp,3.7,MF,80.0,6 sao,balanced
+Minh,2.9,MF,60.0,4 sao,balanced
+Phúc,4.2,MF,80.0,9 sao,strong
+Đức,4.1,GK,90.0,7 sao,strong
+Hải,4.0,MF,80.0,8 sao,strong
+Khanh,3.9,MF,80.0,7 sao,strong
+Mạnh,4.1,MF,90.0,7 sao,strong
+Khang,2.7,GK,50.0,4 sao,weak
+Bảo,3.2,MF,70.0,4 sao,balanced
+Châu,3.6,MF,60.0,8 sao,balanced
+Văn,3.4,MF,60.0,7 sao,balanced
+Long,3.2,MF,60.0,6 sao,balanced
+Dự,5.0,MF,100.0,siêu sao,strong
+Vũ,3.3,MF,70.0,5 sao,balanced
+Hoàng Nam,2.9,MF,40.0,7 sao,balanced
+Trung,2.8,MF,50.0,5 sao,weak
+Thương,3.8,MF,70.0,8 sao,strong
+Vương,4.0,MF,60.0,10 sao,strong
+Quang,3.6,GK,70.0,7 sao,balanced
+Trí,3.0,GK,50,6 sao,balanced
+Thế Minh,2.8,MF,40.0,6 sao,weak
+a Hoàng Anh,3.8,MF,70.0,8 sao,strong
+Khương Peter,2.6,MF,40.0,5 sao,weak
+Hải Anh,3.8,MF,70.0,8 sao,strong
+Hoài Nam,2.9,MF,40.0,7 sao,balanced
+Phát,3.2,MF,50.0,7 sao,balanced
+Phong,3.2,GK,50.0,7 sao,balanced
+6 Hoa,3.6,MF,60.0,8 sao,balanced
+Hớn Tân,3.8,MF,70.0,8 sao,strong
+Vỹ,4.5,MF,100.0,8 sao,strong
+Trí trọc,3.8,MF,70.0,8 sao,strong
+An,2.8,MF,50.0,5 sao,weak
+Đức Lê PCCC,3.6,MF,70.0,7 sao,balanced
+Thành,3.3,MF,50.0,8 sao,balanced
+Tín,2.7,MF,,,weak
+Bạn Lăng,2.9,MF,,,balanced
+Học trò Hải,3.2,GK,60.0,6 sao,balanced
+Đăng,2.8,MF,60.0,4 sao,weak
+Em Hoàng Anh,2.8,MF,,,weak
+Yên (bạn a Trí),2.8,MF,60.0,4 sao,weak
+Htro Hải (Hoàng),2.5,MF,,,weak
+Thiện (bạn Đức),2.0,MF,,,weak
+Tân (hs Hải),3.0,MF,,,balanced
+Na,4.3,MF,,,strong
