@@ -1,42 +1,44 @@
-﻿name,tier,position,stamina,skill
-Lăng,3.0,MF,50.0,6 sao
-Hiệp,3.7,MF,80.0,6 sao
-Minh,2.9,MF,60.0,4 sao
-Phúc,4.2,MF,80.0,9 sao
-Đức,4.1,GK,90.0,7 sao
-Hải,4.0,MF,80.0,8 sao
-Khanh,3.9,MF,80.0,7 sao
-Mạnh,4.1,MF,90.0,7 sao
-Khang,2.7,GK,50.0,4 sao
-Bảo,3.2,MF,70.0,4 sao
-Châu,3.6,MF,60.0,8 sao
-Văn,3.4,MF,60.0,7 sao
-Long,3.2,MF,60.0,6 sao
-Dự,5.0,MF,100.0,siêu sao
-Vũ,3.3,MF,70.0,5 sao
-Hoàng Nam,2.9,MF,40.0,7 sao
-Trung,2.8,MF,50.0,5 sao
-Thương,3.8,MF,70.0,8 sao
-Vương,3.6,MF,60.0,8 sao
-Quang,3.6,GK,70.0,7 sao
-Trí,3.0,GK,50.0,6 sao
-Thế Minh,2.8,MF,40.0,6 sao
-a Hoàng Anh,3.8,MF,70.0,8 sao
-Khương Peter,2.6,MF,40.0,5 sao
-Hải Anh,3.8,MF,70.0,8 sao
-Hoài Nam,2.9,MF,40.0,7 sao
-Phát,3.2,MF,50.0,7 sao
-Phong,3.2,GK,50.0,7 sao
-6 Hoa,3.6,MF,60.0,8 sao
-Hớn Tân,3.8,MF,70.0,8 sao
-Vỹ,4.5,MF,100.0,8 sao
-Trí trọc,3.8,MF,70.0,8 sao
-An,2.8,MF,50.0,5 sao
-Đức Lê PCCC,3.6,MF,70.0,7 sao
-Thành,3.3,MF,50.0,8 sao
-Tín,2.7,MF,,
-Bạn Lăng,2.9,MF,,
-Học trò Hải,3.2,GK,60.0,6 sao
-Đăng,2.8,MF,60.0,4 sao
-Em Hoàng Anh,2.8,MF,,
-Yên (bạn a Trí),2.8,MF,60,4 sao
+﻿name,tier,position,stamina,skill,strength
+Lăng,3.0,MF,60.0,5 sao,balanced
+Hiệp,3.6,DF,80.0,6 sao,balanced
+Minh,3.0,MF,60.0,5 sao,balanced
+Phúc,3.8,ST,70.0,8 sao,strong
+Đức,3.8,GK,80.0,7 sao,strong
+Hải,3.8,MF,80.0,7 sao,strong
+Khanh,3.6,MF,70.0,7 sao,strong
+Mạnh,3.4,DF,80.0,5 sao,strong
+Khang,2.6,ST,60.0,3 sao,weak
+Bảo,3.0,MF,70.0,4 sao,balanced
+Châu,3.6,MF,60.0,8 sao,balanced
+Văn,3.2,DF,60.0,6 sao,balanced
+Long,3.2,ST,70.0,5 sao,balanced
+Dự,4.4,DF,90.0,9 sao,strong
+Vũ,3.3,MF,70.0,5 sao,balanced
+Hoàng Nam,2.4,MF,30.0,5 sao,balanced
+Trung,2.8,ST,50.0,5 sao,weak
+Thương,3.4,DF,60.0,7 sao,strong
+Vương,4.2,DF,80.0,9 sao,strong
+Quang,3.6,GK,70.0,7 sao,balanced
+Trí,3.0,ST,60.0,5 sao,balanced
+Thế Minh,2.8,ST,40.0,6 sao,weak
+a Hoàng Anh,4.0,DF,80.0,8 sao,strong
+Khương Peter,2.2,ST,40.0,3 sao,weak
+Hải Anh,3.4,MF,70.0,6 sao,strong
+Hoài Nam,2.9,MF,40.0,7 sao,balanced
+Phát,3.2,MF,70.0,5 sao,balanced
+Phong,3.2,ST,50.0,7 sao,balanced
+6 Hoa,3.6,MF,60.0,8 sao,balanced
+Hớn Tân,3.8,MF,70.0,8 sao,strong
+Vỹ,4.4,MF,90.0,9 sao,strong
+Trí trọc,3.8,DF,70.0,8 sao,strong
+An,2.6,MF,50.0,5 sao,weak
+Đức Lê PCCC,3.2,ST,70.0,7 sao,balanced
+Thành,3.8,DF,60.0,9 sao,balanced
+Tín,2.7,MF,,,weak
+Bạn Lăng,2.9,MF,,,balanced
+Học trò Hải,3.2,GK,60.0,6 sao,balanced
+Đăng,2.8,MF,60.0,4 sao,weak
+Em Hoàng Anh,2.8,MF,,,weak
+Yên (bạn a Trí),3.4,GK,60.0,7 sao,weak
+Na,4.2,MF,80.0,9 sao,strong
+Trung Kiên,3.6,MF,70,7 sao,balanced
