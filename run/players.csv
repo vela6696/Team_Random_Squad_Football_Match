@@ -1,25 +1,26 @@
 ﻿name,tier,position,stamina,skill,strength
 Lăng,3.0,MF,60.0,5 sao,balanced
-Hiệp,3.6,DF,80.0,6 sao,balanced
+a Hiệp,3.6,DF,80.0,6 sao,balanced
 Minh,2.8,MF,60.0,4 sao,balanced
-Phúc,3.8,ST,70.0,8 sao,strong
-Đức,3.4,GK,80.0,5 sao,strong
-Hải,3.8,MF,80.0,7 sao,strong
+a Gia Phúc,3.8,ST,70.0,8 sao,strong
+Đức Le,3.4,GK,80.0,5 sao,strong
+Xuân Hải,3.8,MF,80.0,7 sao,strong
 Khanh,3.6,MF,70.0,7 sao,strong
-Mạnh,3.4,DF,80.0,5 sao,strong
-Khang,2.6,ST,60.0,3 sao,weak
-Bảo,3.0,MF,70.0,4 sao,balanced
+Mạnh Trần,3.4,DF,80.0,5 sao,strong
+Kuro,2.6,ST,60.0,3 sao,weak
+Quang Bảo,3.0,MF,70.0,4 sao,balanced
 Châu,3.6,MF,60.0,8 sao,balanced
 Văn,3.2,DF,60.0,6 sao,balanced
-Long,3.2,ST,70.0,5 sao,balanced
-Dự,4.4,DF,90.0,9 sao,strong
+ThLong,3.2,ST,70.0,5 sao,balanced
+Dự Ơ Kìa,4.0,DF,90.0,7 sao,strong
 Vũ,3.3,MF,70.0,5 sao,balanced
 Hoàng Nam,2.4,MF,30.0,5 sao,balanced
-Trung,2.8,ST,50.0,5 sao,weak
-Thương,3.4,DF,60.0,7 sao,strong
-Vương,4.2,DF,80.0,9 sao,strong
-Quang,3.6,GK,70.0,7 sao,balanced
-Trí,3.0,ST,60.0,5 sao,balanced
+Trung Dao,2.8,ST,50.0,5 sao,weak
+a Thương,3.2,DF,50.0,7 sao,strong
+a Vương,4.2,DF,80.0,9 sao,strong
+a Quang GK,3.6,GK,70.0,7 sao,balanced
+a Trí,3.0,ST,60.0,5 sao,balanced
+a Trí GK,3.4,GK,70.0,6 sao,balanced
 Thế Minh,2.8,ST,40.0,6 sao,weak
 a Hoàng Anh,4.0,DF,80.0,8 sao,strong
 Khương Peter,2.2,ST,40.0,3 sao,weak
@@ -30,17 +31,21 @@ Phong,3.2,ST,50.0,7 sao,balanced
 6 Hoa,3.6,MF,60.0,8 sao,balanced
 Hớn Tân,3.8,MF,70.0,8 sao,strong
 Vỹ,4.4,MF,90.0,9 sao,strong
-Trí trọc,3.8,DF,70.0,8 sao,strong
+a Trí trọc,3.8,DF,70.0,8 sao,strong
 An,2.6,MF,50.0,5 sao,weak
-Đức Lê PCCC,3.2,ST,70.0,7 sao,balanced
-Thành,3.8,DF,60.0,9 sao,balanced
+Đức Lê PCCC,3.4,ST,60.0,7 sao,balanced
+Thành Nguyễn,3.8,DF,60.0,9 sao,balanced
 Tín,2.7,MF,,,weak
 Bạn Lăng,2.9,MF,,,balanced
 Học trò Hải,3.2,GK,60.0,6 sao,balanced
 Đăng,2.8,MF,60.0,4 sao,weak
 Em Hoàng Anh,2.8,MF,,,weak
-Yên (bạn a Trí),3.4,GK,60.0,7 sao,weak
+a Yên GK (bạn a Trí),3.4,GK,60.0,7 sao,weak
+a Yên (bạn a Trí),3.0,DF,60.0,5 sao,weak
 Na,4.2,MF,80.0,9 sao,strong
 Trung Kiên,3.6,MF,70.0,7 sao,balanced
 Hiếu GK,3.2,GK,70.0,5 sao,weak
-Tùng,2.8,MF,50,5 sao,weak
+Tùng,2.8,MF,50.0,5 sao,weak
+a Khánh Nguyễn GK,3.4,GK,80.0,5 sao,weak
+a Quyền (bạn a Thương),3.6,DF,80.0,6 sao,balanced
+Pháp (bạn a Thương),3.4,MF,60,7 sao,balanced
