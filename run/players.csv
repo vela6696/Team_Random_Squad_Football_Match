@@ -1,7 +1,7 @@
 ﻿name,tier,position,stamina,skill,strength
 Lăng,3.0,MF,60.0,5 sao,balanced
 a Hiệp,3.6,DF,80.0,6 sao,balanced
-Minh,2.8,MF,60.0,4 sao,balanced
+Minh,3.0,MF,60,5 sao,balanced
 a Gia Phúc,3.8,ST,70.0,8 sao,strong
 Đức Le,3.4,GK,80.0,5 sao,strong
 Xuân Hải,3.8,MF,80.0,7 sao,strong
@@ -19,7 +19,7 @@ Trung Dao,2.8,ST,50.0,5 sao,weak
 a Thương,3.2,DF,50.0,7 sao,strong
 a Vương,4.2,DF,80.0,9 sao,strong
 a Quang GK,3.6,GK,70.0,7 sao,balanced
-a Trí,3.0,ST,60.0,5 sao,balanced
+a Trí,2.8,ST,60,4 sao,balanced
 a Trí GK,3.4,GK,70.0,6 sao,balanced
 Thế Minh,2.8,ST,40.0,6 sao,weak
 a Hoàng Anh,4.0,DF,80.0,8 sao,strong
@@ -48,4 +48,5 @@ Hiếu GK,3.2,GK,70.0,5 sao,weak
 Tùng,2.8,MF,50.0,5 sao,weak
 a Khánh Nguyễn GK,3.4,GK,80.0,5 sao,weak
 a Quyền (bạn a Thương),3.6,DF,80.0,6 sao,balanced
-Pháp (bạn a Thương),3.4,MF,60,7 sao,balanced
+Pháp (bạn a Thương),3.4,MF,60.0,7 sao,balanced
+a Đạt Pktcn Sxd,2.4,ST,30,5 sao,weak
