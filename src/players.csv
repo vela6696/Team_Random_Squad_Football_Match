@@ -4,7 +4,7 @@ a Hiệp,3.6,DF,80.0,6 sao,balanced
 Minh,3.0,MF,60.0,5 sao,balanced
 a Gia Phúc,3.8,ST,70.0,8 sao,strong
 Đức Le,3.4,GK,80.0,5 sao,strong
-Xuân Hải,3.8,MF,80.0,7 sao,strong
+Xuân Hải,3.6,MF,80,6 sao,strong
 Khanh,3.6,MF,70.0,7 sao,strong
 Mạnh Trần,3.4,DF,80.0,5 sao,strong
 Kuro,2.6,ST,60.0,3 sao,weak
@@ -12,12 +12,12 @@ Quang Bảo,3.0,MF,70.0,4 sao,balanced
 Châu,3.6,MF,60.0,8 sao,balanced
 Văn,3.2,DF,60.0,6 sao,balanced
 ThLong,3.2,ST,70.0,5 sao,balanced
-Dự Ơ Kìa,4.0,DF,90.0,7 sao,strong
+Dự Ơ Kìa,3.4,DF,70,6 sao,strong
 Vũ,3.3,MF,70.0,5 sao,balanced
 Hoàng Nam,2.4,MF,30.0,5 sao,balanced
 Trung Dao,2.8,ST,50.0,5 sao,weak
 a Thương,3.2,DF,50.0,7 sao,strong
-a Vương,4.2,DF,80.0,9 sao,strong
+a Vương,3.6,DF,60,8 sao,strong
 a Quang GK,3.6,GK,70.0,7 sao,balanced
 a Trí,2.8,ST,60.0,4 sao,balanced
 a Trí GK,3.4,GK,70.0,6 sao,balanced
@@ -48,11 +48,16 @@ Hiếu GK,3.2,GK,70.0,5 sao,weak
 Tùng,2.8,MF,50.0,5 sao,weak
 a Khánh Nguyễn GK,3.4,GK,80.0,5 sao,weak
 a Quyền (bạn a Thương),3.6,DF,80.0,6 sao,balanced
-Pháp (bạn a Thương),3.4,MF,60.0,7 sao,balanced
+Pháp (bạn a Thương),3.4,MF,60,7 sao,balanced
 a Đạt Pktcn Sxd,2.4,ST,30.0,5 sao,weak
-Ngan (ban a Dat),2.6,MF,40.0,5 sao,weak
+Ngan (ban a Dat),2.6,MF,40,5 sao,weak
 Phương Duy,3.4,MF,,,balanced
-Công Khanh,3.2,MF,,,balanced
+Công Khanh,3.2,MF,60,6 sao,balanced
 Jason,1.5,DF,,,weak
 Lân (bạn a Thương),3.0,DF,,,weak
 Hiền (bạn a Thương),3.4,MF,,,balanced
+Nam (bạn Phát),3.5,MF,,,balanced
+Tiến (bạn Phát),3.2,ST,,,balanced
+Kỳ (bạn a Vương),3.0,MF,,,weak
+e Đạt (bạn Minh),3.4,MF,60,7 sao,balanced
+Trí (bạn a Thương),3.6,MF,,,balanced
